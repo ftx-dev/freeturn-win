@@ -1,5 +1,4 @@
-﻿; Установщик FreeTurnX. Собирается scripts/build.sh:
-;   makensis -DVERSION=0.1.0 -DARCH=x64|arm64 -DSRC=build/x64 -DOUT=build/FreeTurnX-0.1.0-x64-setup.exe installer/freeturnx.nsi
+﻿; Windows installer: scripts/Build-Windows.ps1 or scripts/Package-Windows.ps1.
 Unicode true
 ManifestDPIAware true
 RequestExecutionLevel admin

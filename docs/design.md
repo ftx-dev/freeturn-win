@@ -1,25 +1,11 @@
-# FreeTurn для Windows — дизайн
+# FreeTurnX для Windows — устройство
 
-Порт клиента для macOS (`freeturn-macos`, этап 1) на Windows 10/11 с тем же функционалом.
-Решение пользователя: вариант A — движок Amnezia Box (как на macOS) с официальным подписанным
-драйвером wintun от проекта WireGuard; своих драйверов не подписываем.
+Нативный клиент WPF/.NET 10 для Windows 10/11. Движок Amnezia Box использует официальный подписанный wintun.
 
-## Устройство
-
-| macOS | Windows |
-|---|---|
-| FreeTurn.app (SwiftUI) | FreeTurn.exe (WPF, .NET 10, тема Fluent, self-contained) |
-| freeturn-core (Go, пользователь) | freeturn-core.exe — тот же мост, привязка сокетов `IP_UNICAST_IF` вместо `IP_BOUND_IF` |
-| freeturnd (launchd, root) | freeturnd.exe — служба Windows (LocalSystem), команды `install` / `uninstall` |
-| unix-сокет 0600 + uid собеседника | именованный канал `\\.\pipe\freeturnd`, ACL: SYSTEM и администраторы — всё, интерактивные пользователи — чтение/запись |
-| utun движка | wintun, встроен в движок (`sing-tun` грузит подписанный wintun.dll из памяти) |
-| строка меню | значок в области уведомлений |
-| установка службы по паролю | установщик (NSIS, с правами администратора) ставит службу сам |
-| DMG arm64 / x86_64 | установщик `FreeTurn-<версия>-x64-setup.exe` и `…-arm64-setup.exe` (драйвер wintun должен совпадать с процессором) |
-| WKWebView | WebView2 (на Windows 11 есть всегда, на Windows 10 установщик ставит при отсутствии) |
-| Vision (QR) | ZXing.Net |
-| Login item | `HKCU\…\Run` |
-| ~/Library/Application Support | `%LOCALAPPDATA%\FreeTurn` (профиль пользователя закрыт от других) |
+- FreeTurnX.exe: интерфейс, трей, WebView2 и настройки пользователя.
+- freeturn-core.exe: Go-мост к ядру, внешние сокеты обходят туннель.
+- freeturnd.exe: служба Windows LocalSystem, управляет движком через именованный канал.
+- NSIS: установщики x64 и ARM64, установка службы и регистрация ссылок.
 
 Протоколы между процессами (строки JSON) — без изменений: тот же `ProtocolVersion = "1"`.
 
@@ -36,8 +22,8 @@ GitHub Releases `huhhuh78787878-collab/freeturn-win`: установщик св�
 
 ## Проверка
 
-- Логика (`FreeTurn.Core`, net10.0) — тесты xUnit в Linux-контейнере.
-- Go-часть — тесты на macOS, сборка и `go vet` под Windows.
+- Логика (`FreeTurn.Core`, net10.0) — тесты xUnit на Windows.
+- Go-часть — тесты, сборка и `go vet` под Windows.
 - Конфиг движка, собранный C#, проверяет настоящий движок (`check`) и санитайзер службы.
 - Интерфейс, служба, туннель — только на Windows: чек-лист в `docs/acceptance.md`.
 

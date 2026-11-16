@@ -159,7 +159,7 @@ public sealed record AppSettings
     public bool DisableAnimations { get; set; }
     public string Language { get; set; } = "system";
     public bool PrivacyMode { get; set; }
-    public bool AdvancedCaptcha { get; set; }
+    public bool AdvancedCaptcha { get; set; } = true;
     public bool AutoConnect { get; set; }
     public bool LaunchAtLogin { get; set; }
     public bool DebugScreen { get; set; }
@@ -168,7 +168,7 @@ public sealed record AppSettings
     public string CaptchaTarget { get; set; } = "window";
     public bool CheckUpdates { get; set; } = true;
     /// <summary>Иконка приложения: standard - синяя, black - чёрная OLED, x - чёрная с буквой X.</summary>
-    public string AppIcon { get; set; } = "standard";
+    public string AppIcon { get; set; } = "x";
     /// <summary>Разовое предложение подписаться на Telegram-канал уже показано.</summary>
     public bool TelegramPromptShown { get; set; }
     /// <summary>Прошлую сессию пользователь не выключал сам - основание для автоподключения.</summary>
@@ -180,7 +180,7 @@ public sealed record AppSettings
         if (Language is not ("system" or "ru" or "en")) Language = "system";
         if (TunStack is not ("system" or "gvisor" or "mixed")) TunStack = "mixed";
         if (CaptchaTarget != "browser") CaptchaTarget = "window";
-        if (AppIcon is not ("standard" or "black" or "x")) AppIcon = "standard";
+        if (AppIcon is not ("standard" or "black" or "x")) AppIcon = "x";
     }
 }
 

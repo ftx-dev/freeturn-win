@@ -7,8 +7,8 @@ import (
 	"github.com/samosvalishe/free-turn-proxy/mobile"
 )
 
-// Эталоны пишет Swift (CoreConfig.build); здесь их принимает настоящий декодер ядра.
-func TestSwiftFixtureAccepted(t *testing.T) {
+// Конфиги клиента проверяются настоящим декодером ядра.
+func TestClientFixtureAccepted(t *testing.T) {
 	for _, name := range []string{"testdata/core-config-direct.json", "testdata/core-config-relay.json"} {
 		raw, err := os.ReadFile(name)
 		if err != nil {

@@ -1,6 +1,6 @@
 //go:build !windows
 
-// freeturnd - служба launchd с правами root: поднимает системный туннель по команде FreeTurn.app.
+// UNIX-вход для переносимых тестов службы; Windows использует main_windows.go.
 package main
 
 import (

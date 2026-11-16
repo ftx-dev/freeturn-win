@@ -201,7 +201,7 @@ public class RoutingTests
         server.Client.RoutingProfileId = Presets.RussiaDirect.Id;
         Assert.Equal(Presets.RussiaDirect, file.ProfileFor(server));
         file.Remove(mine.Id);
-        Assert.Equal(Presets.AllViaVpn.Id, file.SharedProfileId);
+        Assert.Equal(Presets.RussiaDirect.Id, file.SharedProfileId);
         var copy = file.Clone(Presets.RussiaDirect.Id)!;
         Assert.False(copy.BuiltIn);
         Assert.Equal(Presets.RussiaDirect.Rules.Count, copy.Rules.Count);
@@ -217,7 +217,7 @@ public class RoutingTests
         var file = new RoutingFile { Profiles = [mine, stale], SharedProfileId = "gone" }.Normalized();
         Assert.Equal([Presets.AllViaVpn.Id, Presets.RussiaDirect.Id, mine.Id], file.Profiles.Select(p => p.Id));
         Assert.NotEmpty(file.Profiles[1].Rules);
-        Assert.Equal(Presets.AllViaVpn.Id, file.SharedProfileId);
+        Assert.Equal(Presets.RussiaDirect.Id, file.SharedProfileId);
     }
 
     [Fact]

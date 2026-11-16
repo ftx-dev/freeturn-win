@@ -123,8 +123,28 @@ public class ModelTests
         Assert.Equal("mixed", s.TunStack);
         Assert.Equal("system", s.Theme);
         Assert.True(s.CheckUpdates);
-        Assert.Equal("standard", s.AppIcon);
-        Assert.Equal("standard", new AppSettings().AppIcon);
+        Assert.Equal("x", s.AppIcon);
+        Assert.Equal("x", new AppSettings().AppIcon);
+    }
+
+    [Fact]
+    public void FreshInstallDefaultsAndSavedPreferences()
+    {
+        var dir = T.TempDir();
+        var store = new Store(dir);
+        var settings = store.Load("settings.json", new AppSettings());
+        Assert.Equal("x", settings.AppIcon);
+        Assert.True(settings.AdvancedCaptcha);
+        var server = new Server();
+        Assert.Equal(Provider.Relay, server.Client.Provider);
+        Assert.False(server.Client.ManualCaptcha);
+        Assert.Equal(Presets.RussiaDirect.Id, RoutingFile.Initial().ProfileFor(server).Id);
+        File.WriteAllText(Path.Combine(dir, "settings.json"), """{"appIcon":"standard","advancedCaptcha":false}""");
+        settings = store.Load("settings.json", new AppSettings());
+        Assert.Equal("standard", settings.AppIcon);
+        Assert.False(settings.AdvancedCaptcha);
+        var routing = new RoutingFile { SharedProfileId = Presets.AllViaVpn.Id }.Normalized();
+        Assert.Equal(Presets.AllViaVpn.Id, routing.SharedProfileId);
     }
 
     [Theory]

@@ -44,29 +44,29 @@ public sealed class RoutingFile
 {
     public List<RoutingProfile> Profiles { get; set; } = [];
     /// <summary>Профиль для серверов без собственного.</summary>
-    public string SharedProfileId { get; set; } = Presets.AllViaVpn.Id;
+    public string SharedProfileId { get; set; } = Presets.RussiaDirect.Id;
 
-    public static RoutingFile Initial() => new() { Profiles = [Presets.AllViaVpn, Presets.RussiaDirect], SharedProfileId = Presets.AllViaVpn.Id };
+    public static RoutingFile Initial() => new() { Profiles = [Presets.AllViaVpn, Presets.RussiaDirect], SharedProfileId = Presets.RussiaDirect.Id };
 
     /// <summary>Файл с диска: встроенные профили берутся из текущей версии приложения, свои сохраняются.</summary>
     public RoutingFile Normalized()
     {
         var own = (Profiles ?? []).Where(p => p is not null && !p.BuiltIn && p.Id != Presets.AllViaVpn.Id && p.Id != Presets.RussiaDirect.Id);
         List<RoutingProfile> all = [Presets.AllViaVpn, Presets.RussiaDirect, .. own];
-        return new RoutingFile { Profiles = all, SharedProfileId = all.Any(p => p.Id == SharedProfileId) ? SharedProfileId : Presets.AllViaVpn.Id };
+        return new RoutingFile { Profiles = all, SharedProfileId = all.Any(p => p.Id == SharedProfileId) ? SharedProfileId : Presets.RussiaDirect.Id };
     }
 
     public RoutingProfile ProfileFor(Server server) =>
         Profiles.FirstOrDefault(p => p.Id == server.Client.RoutingProfileId)
         ?? Profiles.FirstOrDefault(p => p.Id == SharedProfileId)
-        ?? Presets.AllViaVpn;
+        ?? Presets.RussiaDirect;
 
     public void Add(RoutingProfile profile) => Profiles.Add(profile);
 
     public void Remove(string id)
     {
         Profiles.RemoveAll(p => p.Id == id && !p.BuiltIn);
-        if (!Profiles.Any(p => p.Id == SharedProfileId)) SharedProfileId = Presets.AllViaVpn.Id;
+        if (!Profiles.Any(p => p.Id == SharedProfileId)) SharedProfileId = Presets.RussiaDirect.Id;
     }
 
     public RoutingProfile? Clone(string id)

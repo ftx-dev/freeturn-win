@@ -37,7 +37,7 @@ func mustReject(t *testing.T, raw []byte, want string) {
 }
 
 func TestAcceptsGeneratedShape(t *testing.T) {
-	// Эталон пишет Swift (EngineConfig.build), см. EngineConfigTests.
+	// Эталон конфигурации клиента, см. ConfigTests в FreeTurn.Core.Tests.
 	raw, err := os.ReadFile("testdata/engine.json")
 	if err != nil {
 		t.Fatal(err)
