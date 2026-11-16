@@ -117,21 +117,62 @@ public sealed class HomeView : UserControl, IDisposable
         return t;
     }
 
+    /// «Сервер · Способ ⌄»: имя - выбор сервера, способ - релей или напрямую у этого сервера.
     UIElement ServerPicker(ConnectionState state)
     {
-        var combo = new ComboBox { HorizontalAlignment = HorizontalAlignment.Center, MinWidth = 260, IsEnabled = !state.IsActive };
-        foreach (var s in model.Servers.List) combo.Items.Add(new ComboBoxItem { Content = Summary(s, state), Tag = s.Id });
-        combo.SelectedIndex = model.Servers.List.FindIndex(s => s.Id == model.Servers.ActiveId);
-        combo.SelectionChanged += (_, _) => { if (combo.SelectedItem is ComboBoxItem { Tag: string id } && id != model.Servers.ActiveId) model.SetActive(id); };
-        return combo;
+        var server = model.ActiveServer!;
+        var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, IsEnabled = !state.IsActive };
+        var name = LinkButton(server.Name, chevron: false);
+        var servers = new ContextMenu();
+        foreach (var s in model.Servers.List)
+        {
+            var item = new MenuItem { Header = s.Name, IsChecked = s.Id == server.Id };
+            item.Click += (_, _) => model.SetActive(s.Id);
+            servers.Items.Add(item);
+        }
+        Attach(name, servers);
+        row.Children.Add(name);
+        row.Children.Add(new TextBlock { Text = "·", Opacity = 0.65, Margin = new Thickness(2, 0, 2, 0), VerticalAlignment = VerticalAlignment.Center });
+        var provider = LinkButton(ProviderSummary(server, state), chevron: true);
+        var providers = new ContextMenu();
+        foreach (var p in new[] { Provider.Relay, Provider.Direct })
+        {
+            var item = new MenuItem { Header = p == Provider.Direct ? L("Напрямую") : L("Через релей"), IsChecked = p == server.Client.Provider };
+            item.Click += (_, _) =>
+            {
+                var edited = server.Copy();
+                edited.Client.Provider = p;
+                model.Servers.Update(edited);
+                model.NotifyServers();
+            };
+            providers.Items.Add(item);
+        }
+        Attach(provider, providers);
+        row.Children.Add(provider);
+        return row;
     }
 
-    static string Summary(Server s, ConnectionState state)
+    static Button LinkButton(string text, bool chevron)
     {
-        var parts = new System.Collections.Generic.List<string> { s.Name, s.Client.Provider == Provider.Direct ? L("Напрямую") : L("Через релей") };
-        if (s.Client.Provider != Provider.Direct && state is ConnectionState.Connected { Total: > 0 } c) parts.Add($"{c.Streams}/{c.Total} {L("потоков")}");
-        if (s.Client.Provider != Provider.Direct && state is ConnectionState.Connecting { Total: > 0 } g) parts.Add($"{g.Streams}/{g.Total} {L("потоков")}");
-        return string.Join(" · ", parts);
+        var content = new TextBlock { Opacity = 0.8 };
+        content.Inlines.Add(new System.Windows.Documents.Run(text));
+        // Стрелка вниз из Segoe Fluent Icons - только у способа подключения.
+        if (chevron) content.Inlines.Add(new System.Windows.Documents.Run("  \uE70D") { FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 10 });
+        return new Button { Content = content, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Padding = new Thickness(4, 2, 4, 2), Cursor = System.Windows.Input.Cursors.Hand };
+    }
+
+    static void Attach(Button button, ContextMenu menu)
+    {
+        button.ContextMenu = menu;
+        button.Click += (_, _) => { menu.PlacementTarget = button; menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom; menu.IsOpen = true; };
+    }
+
+    static string ProviderSummary(Server s, ConnectionState state)
+    {
+        var text = s.Client.Provider == Provider.Direct ? L("Напрямую") : L("Через релей");
+        if (s.Client.Provider != Provider.Direct && state is ConnectionState.Connected { Total: > 0 } c) text += $" · {c.Streams}/{c.Total} {L("потоков")}";
+        if (s.Client.Provider != Provider.Direct && state is ConnectionState.Connecting { Total: > 0 } g) text += $" · {g.Streams}/{g.Total} {L("потоков")}";
+        return text;
     }
 
     UIElement Failure(ConnectionFailure reason)

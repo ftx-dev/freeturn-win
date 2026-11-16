@@ -101,7 +101,7 @@ public sealed class SettingsView : UserControl, IDisposable
     UIElement IconPicker()
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal };
-        foreach (var (variant, title) in new[] { ("standard", L("Стандартная")), ("black", "Black"), ("x", "X") })
+        foreach (var (variant, title) in new[] { ("standard", "Classic"), ("black", "Black"), ("x", "X") })
         {
             var content = new StackPanel();
             content.Children.Add(new Image { Source = AppIcons.Logo(variant), Width = 44, Height = 44 });

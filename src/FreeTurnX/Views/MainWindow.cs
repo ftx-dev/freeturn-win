@@ -77,11 +77,19 @@ public sealed class MainWindow : Window
         loadError.Visibility = model.LoadError is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    /// Раздел собирается один раз и дальше только показывается: пересборка форм на каждом
+    /// переключении давала заметную задержку.
+    readonly System.Collections.Generic.Dictionary<Section, UIElement> pages = [];
+
     void Show(Section section)
     {
         nav.SelectedIndex = Array.FindIndex(Sections, s => s.section == section);
-        (content.Content as IDisposable)?.Dispose();
-        content.Content = section switch
+        if (!pages.TryGetValue(section, out var page)) pages[section] = page = Build(section);
+        content.Content = page;
+    }
+
+    UIElement Build(Section section) =>
+        section switch
         {
             Section.Home => new HomeView(model),
             Section.Servers => new ServersView(model),
@@ -90,7 +98,6 @@ public sealed class MainWindow : Window
             Section.Settings => new SettingsView(model),
             _ => new AboutView(model),
         };
-    }
 
     protected override void OnClosing(CancelEventArgs e)
     {

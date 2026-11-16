@@ -2,7 +2,9 @@
 # Сборка FreeTurnX для Windows на macOS/Linux: Go-часть - нативно, .NET и NSIS - в Docker.
 #   scripts/build.sh            - x64 и arm64
 #   scripts/build.sh x64        - только одна архитектура
-# Результат: build/FreeTurnX-<версия>-<arch>-setup.exe и build/SHA256SUMS.txt
+# Результат - папка dist/ только с готовыми установщиками (всё остальное встроено в них):
+#   dist/FreeTurnX-<версия>-x64-setup.exe, dist/FreeTurnX-<версия>-arm64-setup.exe, dist/SHA256SUMS.txt
+# В build/ - промежуточные файлы: бинарники по архитектурам и загрузчик WebView2, который вшивается в установщик.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -11,7 +13,7 @@ VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)"
 ARCHS=("${@:-x64 arm64}")
 [ $# -eq 0 ] && ARCHS=(x64 arm64)
 NUGET="$HOME/.nuget-docker"
-mkdir -p build "$NUGET"
+mkdir -p build dist "$NUGET"
 
 # Загрузчик WebView2 Runtime (Evergreen) - ставится, только если его нет.
 [ -s build/MicrosoftEdgeWebview2Setup.exe ] || curl -fsSL -o build/MicrosoftEdgeWebview2Setup.exe "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
@@ -35,9 +37,10 @@ for arch in "${ARCHS[@]}"; do
   mv "$out/app/FreeTurnX.exe" "$out/" && rm -rf "$out/app"
   echo "== $arch: установщик"
   docker run --rm -v "$ROOT:/src" -w /src freeturnx-nsis \
-    makensis -V2 -DVERSION="$VERSION" -DARCH="$arch" -DSRC="$out" -DOUT="build/FreeTurnX-$VERSION-$arch-setup.exe" /src/installer/freeturnx.nsi
+    makensis -V2 -DVERSION="$VERSION" -DARCH="$arch" -DSRC="$out" -DOUT="dist/FreeTurnX-$VERSION-$arch-setup.exe" /src/installer/freeturnx.nsi
 done
 
 # Контрольные суммы - их сверяет автообновление перед установкой.
-(cd build && shasum -a 256 FreeTurnX-"$VERSION"-*-setup.exe > SHA256SUMS.txt)
-ls -lh build/*.exe build/SHA256SUMS.txt
+rm -f dist/SHA256SUMS.txt
+(cd dist && shasum -a 256 FreeTurnX-"$VERSION"-*-setup.exe > SHA256SUMS.txt)
+ls -lh dist/
