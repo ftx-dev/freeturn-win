@@ -29,32 +29,44 @@ public sealed class MainWindow : Window
     public MainWindow(AppModel model)
     {
         this.model = model;
-        Title = "FreeTurnX";
+        Title = "FreeTurnX " + Services.Updater.CurrentVersion
+            + (Environment.GetEnvironmentVariable("FREETURN_DATA_DIR") is { Length: > 0 } ? " · Test" : "");
         Width = 1000;
         Height = 700;
         MinWidth = 900;
         MinHeight = 580;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Icon = Services.AppIcons.Window(model.Settings.AppIcon);
+        nav.ItemContainerStyle = (Style)Application.Current.Resources["NavigationItem"];
 
         foreach (var (section, glyph, title) in Sections)
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4, 6, 4, 6) };
             row.Children.Add(Ui.Glyph(glyph));
             row.Children.Add(new TextBlock { Text = L(title), Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
-            nav.Items.Add(new ListBoxItem { Content = row, Tag = section });
+            var item = new ListBoxItem { Content = row, Tag = section };
+            System.Windows.Automation.AutomationProperties.SetName(item, L(title));
+            nav.Items.Add(item);
         }
         nav.SelectionChanged += (_, _) => { if (nav.SelectedItem is ListBoxItem { Tag: Section s }) model.Section = s; };
 
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(210) });
         grid.ColumnDefinitions.Add(new ColumnDefinition());
-        grid.Children.Add(nav);
+        var sidebar = new DockPanel { Margin = new Thickness(4, 8, 12, 8) };
+        var brand = new TextBlock { Text = "FreeTurnX", FontSize = 20, FontWeight = FontWeights.SemiBold, Margin = new Thickness(22, 12, 12, 24) };
+        DockPanel.SetDock(brand, Dock.Top);
+        sidebar.Children.Add(brand);
+        sidebar.Children.Add(nav);
+        grid.Children.Add(sidebar);
         var right = new DockPanel();
         loadError.Child = new TextBlock { TextWrapping = TextWrapping.Wrap };
         DockPanel.SetDock(loadError, Dock.Top);
         right.Children.Add(loadError);
-        right.Children.Add(content);
+        var surface = new Border { CornerRadius = new CornerRadius(12, 0, 0, 0), BorderThickness = new Thickness(1, 1, 0, 0), Child = content };
+        surface.SetResourceReference(Border.BackgroundProperty, "LayerFillColorDefaultBrush");
+        surface.SetResourceReference(Border.BorderBrushProperty, "CardStrokeColorDefaultBrush");
+        right.Children.Add(surface);
         Grid.SetColumn(right, 1);
         grid.Children.Add(right);
         Content = grid;
@@ -86,6 +98,7 @@ public sealed class MainWindow : Window
         nav.SelectedIndex = Array.FindIndex(Sections, s => s.section == section);
         if (!pages.TryGetValue(section, out var page)) pages[section] = page = Build(section);
         content.Content = page;
+        Ui.FadeIn(content);
     }
 
     UIElement Build(Section section) =>

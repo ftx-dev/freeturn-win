@@ -43,7 +43,7 @@ public sealed class ImportWindow : Window
         if (draft.DuplicateConf) panel.Children.Add(Ui.Hint(L("Этот конфиг WireGuard уже импортирован."), Ui.Orange));
 
         var ok = new Button { Content = L("Импортировать"), IsDefault = true, Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(0, 0, 8, 0) };
-        if (Application.Current.TryFindResource("AccentButtonStyle") is Style accent) ok.Style = accent;
+        if (Application.Current.TryFindResource("SmoothAccentButton") is Style accent) ok.Style = accent;
         var cancel = new Button { Content = L("Отмена"), IsCancel = true, Padding = new Thickness(14, 5, 14, 6) };
         void Validate() => ok.IsEnabled = !draft.NeedsCallLink || callLink.Text.Trim().Length > 0;
         callLink.TextChanged += (_, _) => Validate();

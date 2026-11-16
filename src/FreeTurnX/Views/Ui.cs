@@ -2,12 +2,38 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace FreeTurnX.Views;
 
 /// <summary>Кирпичики форм в духе настроек Windows 11: карточка, строка «подпись - элемент», сноска.</summary>
 static class Ui
 {
+    public static void FadeIn(UIElement element)
+    {
+        if (!Motion.Allowed) return;
+        element.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.7, 1, TimeSpan.FromMilliseconds(130)) { FillBehavior = FillBehavior.Stop });
+    }
+
+    public static Button ActionIcon(string label, string path, Action action, Brush? color = null)
+    {
+        var ink = color ?? new SolidColorBrush(Color.FromRgb(70, 145, 220));
+        var geometry = Geometry.Parse(path).Clone();
+        var bounds = geometry.Bounds;
+        geometry.Transform = new TranslateTransform(12 - bounds.X - bounds.Width / 2, 12 - bounds.Y - bounds.Height / 2);
+        geometry.Freeze();
+        var drawing = new Canvas { Width = 24, Height = 24 };
+        drawing.Children.Add(new System.Windows.Shapes.Path { Data = geometry, Stroke = ink, StrokeThickness = 1.6, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round });
+        var icon = new Viewbox { Width = 20, Height = 20, Child = drawing };
+        var button = new Button { Content = icon, ToolTip = label, Width = 36, Height = 36, Padding = new Thickness(6), HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0), BorderBrush = ink, BorderThickness = new Thickness(1) };
+        button.SetResourceReference(Control.BackgroundProperty, "CardBackgroundFillColorDefaultBrush");
+        button.Foreground = ink;
+        button.Style = (Style)Application.Current.Resources["ActionIconButton"];
+        System.Windows.Automation.AutomationProperties.SetName(button, label);
+        button.Click += (_, _) => action();
+        return button;
+    }
+
     public static TextBlock Header(string text) => new() { Text = text, Style = (Style)Application.Current.Resources["SectionHeader"] };
 
     public static TextBlock Hint(string text, Brush? color = null)
@@ -81,7 +107,7 @@ static class Ui
     public static Button Button(string title, Action click, bool accent = false)
     {
         var b = new Button { Content = title, Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(0, 0, 8, 0) };
-        if (accent && Application.Current.TryFindResource("AccentButtonStyle") is Style style) b.Style = style;
+        if (accent && Application.Current.TryFindResource("SmoothAccentButton") is Style style) b.Style = style;
         b.Click += (_, _) => click();
         return b;
     }

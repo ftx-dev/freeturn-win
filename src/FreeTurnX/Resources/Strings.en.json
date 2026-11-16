@@ -173,7 +173,7 @@
  "Работает": "Running",
  "Резолвер ядра": "Core resolver",
  "Рекомендуется 8–12 потоков: больше — выше риск блокировки со стороны сервиса звонков.": "8–12 streams are recommended: more raises the risk of a ban by the call service.",
- "Российские сервисы напрямую": "Russian services direct",
+ "РФ сервисы напрямую": "Russian services direct",
  "Ручная настройка": "Manual setup",
  "Ручной ввод капчи": "Manual captcha",
  "Сброс": "Reset",
@@ -242,5 +242,7 @@
  "мс": "ms",
  "нет конфига WireGuard": "no WireGuard config",
  "общий": "shared",
- "потоков": "streams"
+ "потоков": "streams",
+ "Переподключение...": "Reconnecting...",
+ "Отключить анимации": "Disable animations"
 }

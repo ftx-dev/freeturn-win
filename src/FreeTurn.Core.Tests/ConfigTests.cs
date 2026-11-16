@@ -82,6 +82,7 @@ public class EngineConfigTests
         var o = Build();
         var ep = o["endpoints"]![0]!;
         Assert.Equal("wireguard", (string?)ep["type"]);
+        Assert.Equal("127.0.0.1", (string?)ep["inet4_bind_address"]);
         Assert.Equal(1280, (int)ep["mtu"]!);
         var peer = ep["peers"]![0]!;
         Assert.Equal(("127.0.0.1", 41000, 25), ((string?)peer["address"], (int)peer["port"]!, (int)peer["persistent_keepalive_interval"]!));
@@ -95,6 +96,7 @@ public class EngineConfigTests
     {
         var ep = Build(T.AmneziaWG)["endpoints"]![0]!;
         Assert.Equal("awg", (string?)ep["type"]);
+        Assert.Equal("127.0.0.1", (string?)ep["inet4_bind_address"]);
         Assert.Equal(4, (int)ep["jc"]!);
         Assert.Equal("1", (string?)ep["h1"]);
         Assert.True((bool)ep["random_trailers"]!);

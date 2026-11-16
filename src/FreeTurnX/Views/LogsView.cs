@@ -21,24 +21,30 @@ public sealed class LogsView : UserControl, IDisposable
     public LogsView(AppModel model)
     {
         this.model = model;
-        var bar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(16, 12, 16, 8) };
+        var toolbar = new StackPanel { Margin = new Thickness(16, 12, 16, 12) };
+        var bar = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+        toolbar.Children.Add(bar);
         bar.Children.Add(Ui.Choice(minLevel, [(LogLevel.Debug, L("Все")), (LogLevel.Info, L("Инфо и выше")), (LogLevel.Warn, L("Предупреждения и ошибки")), (LogLevel.Error, L("Только ошибки"))],
             v => { minLevel = v; Fill(); }, 180));
         var src = Ui.Choice(source, [(null, L("Все источники")), (LogSource.Core, L("Ядро")), (LogSource.Engine, L("Движок")), (LogSource.App, L("Приложение"))],
             v => { source = v; Fill(); }, 160);
         src.Margin = new Thickness(8, 0, 8, 0);
         bar.Children.Add(src);
-        var search = new TextBox { MinWidth = 200, ToolTip = L("Поиск") };
+        var commands = new DockPanel { LastChildFill = true };
+        toolbar.Children.Add(commands);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 0, 0, 0) };
+        DockPanel.SetDock(actions, Dock.Right);
+        commands.Children.Add(actions);
+        var search = new TextBox { MinWidth = 120, Height = 36, VerticalContentAlignment = VerticalAlignment.Center, ToolTip = L("Поиск") };
         search.TextChanged += (_, _) => { query = search.Text; Fill(); };
-        bar.Children.Add(search);
-        var copy = Ui.Button(L("Копировать"), () => Clipboard.SetText(string.Join(Environment.NewLine, Lines().Select(Render))));
-        copy.Margin = new Thickness(8, 0, 8, 0);
-        bar.Children.Add(copy);
-        bar.Children.Add(Ui.Button(L("Сохранить…"), Save));
-        bar.Children.Add(Ui.Button(L("Очистить"), () => model.Logs.Clear()));
+        commands.Children.Add(search);
+        var copy = Ui.ActionIcon(L("Копировать"), "M6,6 L18,6 18,20 6,20 Z M3,16 L2,16 2,2 14,2 14,3", () => Clipboard.SetText(string.Join(Environment.NewLine, Lines().Select(Render))));
+        actions.Children.Add(copy);
+        actions.Children.Add(Ui.ActionIcon(L("Сохранить…"), "M2,2 L16,2 20,6 20,20 2,20 Z M6,2 L6,8 15,8 15,2 M6,20 L6,13 16,13 16,20", Save));
+        actions.Children.Add(Ui.ActionIcon(L("Очистить"), "M2,4 L18,4 M7,4 L7,1 13,1 13,4 M4,4 L5,20 15,20 16,4", () => model.Logs.Clear(), Ui.Red));
         var root = new DockPanel();
-        DockPanel.SetDock(bar, Dock.Top);
-        root.Children.Add(bar);
+        DockPanel.SetDock(toolbar, Dock.Top);
+        root.Children.Add(toolbar);
         root.Children.Add(list);
         Content = root;
         model.Logs.CollectionChanged += OnLogs;

@@ -30,6 +30,16 @@ public partial class App : Application
         var ui = SynchronizationContext.Current!;
         Model = new AppModel(ui);
         ApplyTheme();
+        ApplyAnimations();
+        AppIcons.UpdateStartMenu(Model.Settings.AppIcon);
+        Model.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(AppModel.Settings)) AppIcons.UpdateStartMenu(Model.Settings.AppIcon);
+        };
+        SystemParameters.StaticPropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(SystemParameters.ClientAreaAnimation)) Dispatcher.Invoke(ApplyAnimations);
+        };
         single.Listen(message =>
         {
             ShowMainWindow();
@@ -47,6 +57,8 @@ public partial class App : Application
         "dark" => ThemeMode.Dark,
         _ => ThemeMode.System,
     };
+
+    public void ApplyAnimations() => Resources["AppAnimationsEnabled"] = Motion.Allowed;
 
     public void ShowMainWindow()
     {

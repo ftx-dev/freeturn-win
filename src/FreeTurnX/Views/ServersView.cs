@@ -77,8 +77,8 @@ public sealed class ServersView : UserControl, IDisposable
             icon.Margin = new Thickness(0, 0, 10, 0);
             row.Children.Add(icon);
             var text = new StackPanel();
-            text.Children.Add(new TextBlock { Text = s.Name.Length == 0 ? L("Без названия") : s.Name, FontWeight = FontWeights.SemiBold });
-            text.Children.Add(new TextBlock { Text = s.Client.ServerAddress.Length == 0 ? "—" : model.Masked(s.Client.ServerAddress), FontSize = 12, Opacity = 0.65 });
+            text.Children.Add(new TextBlock { Text = s.Name.Length == 0 ? L("Без названия") : s.Name, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
+            text.Children.Add(new TextBlock { Text = s.Client.ServerAddress.Length == 0 ? "—" : model.Masked(s.Client.ServerAddress), FontSize = 12, Opacity = 0.65, TextTrimming = TextTrimming.CharacterEllipsis });
             Grid.SetColumn(text, 1);
             row.Children.Add(text);
             if (s.Id == model.Servers.ActiveId)
@@ -86,10 +86,12 @@ public sealed class ServersView : UserControl, IDisposable
                 var mark = Ui.Glyph("");
                 mark.Foreground = Ui.Green;
                 mark.ToolTip = L("Активный");
+                mark.Margin = new Thickness(12, 0, 4, 0);
+                mark.HorizontalAlignment = HorizontalAlignment.Right;
                 Grid.SetColumn(mark, 2);
                 row.Children.Add(mark);
             }
-            var item = new ListBoxItem { Content = row, Tag = s.Id, ContextMenu = RowMenu(s) };
+            var item = new ListBoxItem { Content = row, Tag = s.Id, ContextMenu = RowMenu(s), HorizontalContentAlignment = HorizontalAlignment.Stretch };
             list.Items.Add(item);
         }
         if (!model.Servers.List.Any(s => s.Id == selectedId)) selectedId = model.Servers.List.FirstOrDefault()?.Id;

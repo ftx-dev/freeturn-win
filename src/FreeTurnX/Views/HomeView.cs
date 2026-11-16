@@ -46,7 +46,7 @@ public sealed class HomeView : UserControl, IDisposable
         }
 
         var state = model.Connection.State;
-        var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(24, 28, 24, 24), MaxWidth = 620 };
+        var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(24, 60, 24, 24), MaxWidth = 620 };
         panel.Children.Add(PowerButton(state));
         panel.Children.Add(new TextBlock { Text = Title(state), FontSize = 22, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 18, 0, 8) });
         panel.Children.Add(ServerPicker(state));
@@ -88,23 +88,45 @@ public sealed class HomeView : UserControl, IDisposable
         };
         var circle = new Ellipse
         {
-            Width = 164, Height = 164,
+            Width = 132, Height = 132,
             Fill = new LinearGradientBrush(top, bottom, 90),
             Stroke = new SolidColorBrush(Color.FromArgb(56, 255, 255, 255)),
             StrokeThickness = 1,
-            Effect = new DropShadowEffect { Color = bottom, BlurRadius = 28, ShadowDepth = 6, Opacity = 0.45 },
+            Effect = new DropShadowEffect { Color = bottom, BlurRadius = 20, ShadowDepth = 4, Opacity = 0.22 },
         };
-        var glyph = new TextBlock { Text = "", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 56, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-        var face = new Grid();
+        var drawing = new Canvas { Width = 24, Height = 24 };
+        drawing.Children.Add(new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse("M12,2 L12,10 M6.2,5.2 A9,9 0 1 0 17.8,5.2"),
+            Stroke = Brushes.White, StrokeThickness = 1.65,
+            StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
+        });
+        var glyph = new Viewbox { Child = drawing, Width = 48, Height = 48, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        var face = new Grid { Width = 160, Height = 160 };
+        var scale = new ScaleTransform(1, 1);
+        face.RenderTransform = scale;
+        face.RenderTransformOrigin = new Point(0.5, 0.5);
+        face.Children.Add(new Ellipse { Width = 150, Height = 150, Stroke = new SolidColorBrush(top), StrokeThickness = 1, Opacity = 0.3 });
         face.Children.Add(circle);
         face.Children.Add(glyph);
         var button = new Button
         {
-            Content = face, Width = 180, Height = 180, Background = Brushes.Transparent, BorderThickness = new Thickness(0),
+            HorizontalAlignment = HorizontalAlignment.Center, Content = face, Width = 180, Height = 180, Padding = new Thickness(0), Background = Brushes.Transparent, BorderThickness = new Thickness(0),
             Cursor = System.Windows.Input.Cursors.Hand, IsEnabled = state is not ConnectionState.Stopping,
             Template = PlainTemplate(),
         };
         System.Windows.Automation.AutomationProperties.SetName(button, state.IsActive ? L("Отключить") : L("Подключить"));
+        void AnimateFace(double value)
+        {
+            Motion.Animate(scale, ScaleTransform.ScaleXProperty, value);
+            Motion.Animate(scale, ScaleTransform.ScaleYProperty, value);
+        }
+        button.MouseEnter += (_, _) => AnimateFace(1.035);
+        button.MouseLeave += (_, _) => AnimateFace(1);
+        button.PreviewMouseLeftButtonDown += (_, _) => AnimateFace(0.97);
+        button.PreviewMouseLeftButtonUp += (_, _) => AnimateFace(button.IsMouseOver ? 1.035 : 1);
+        button.LostMouseCapture += (_, _) => AnimateFace(button.IsMouseOver ? 1.035 : 1);
+        button.Unloaded += (_, _) => { scale.BeginAnimation(ScaleTransform.ScaleXProperty, null); scale.BeginAnimation(ScaleTransform.ScaleYProperty, null); };
         button.Click += async (_, _) => await model.ToggleConnectionAsync();
         return button;
     }
@@ -114,6 +136,11 @@ public sealed class HomeView : UserControl, IDisposable
     {
         var t = new ControlTemplate(typeof(Button));
         t.VisualTree = new FrameworkElementFactory(typeof(ContentPresenter));
+        t.VisualTree.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        t.VisualTree.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        var disabled = new Trigger { Property = UIElement.IsEnabledProperty, Value = false };
+        disabled.Setters.Add(new Setter(UIElement.OpacityProperty, 0.5));
+        t.Triggers.Add(disabled);
         return t;
     }
 

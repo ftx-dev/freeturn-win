@@ -106,7 +106,7 @@ public static class Presets
     /// <summary>Российские сервисы часто недоступны с зарубежного IP. "xn--p1ai" - это .рф: в трафике домен в punycode.</summary>
     public static readonly RoutingProfile RussiaDirect = new()
     {
-        Id = "builtin-ru", Name = "Российские сервисы напрямую", DefaultAction = RouteAction.Vpn, BuiltIn = true,
+        Id = "builtin-ru", Name = "РФ сервисы напрямую", DefaultAction = RouteAction.Vpn, BuiltIn = true,
         Rules = [.. RussianSuffixes.Select(s => new RoutingRule { Id = "builtin-ru-" + s, Kind = RuleKind.DomainSuffix, Value = s, Action = RouteAction.Direct })],
     };
 }
@@ -245,6 +245,9 @@ public static class EngineConfig
             ["address"] = CoreConfig.Array(wg.Addresses.Select(a => a.Contains('/') ? a : a + (a.Contains(':') ? "/128" : "/32"))),
             ["mtu"] = CoreConfig.TunnelMtu,
             ["private_key"] = wg.PrivateKey,
+            // The peer is the local bridge, never the physical network adapter.
+            // Explicit loopback binding disables auto_detect_interface for this socket.
+            ["inet4_bind_address"] = "127.0.0.1",
             ["tag"] = "vpn",
             ["type"] = awg ? "awg" : "wireguard",
         };

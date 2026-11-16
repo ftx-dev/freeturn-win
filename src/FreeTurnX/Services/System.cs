@@ -92,7 +92,12 @@ public sealed class SleepWatcher : IDisposable
 /// передаёт аргумент первому через канал и выходит.</summary>
 public sealed class SingleInstance : IDisposable
 {
-    static readonly string Id = "FreeTurnX-" + (WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName);
+    // Independent data directories must not forward launches to the installed client.
+    static readonly string Id = "FreeTurnX-" + (WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName)
+        + (Environment.GetEnvironmentVariable("FREETURN_DATA_DIR") is { Length: > 0 } directory
+            ? "-" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(directory).TrimEnd('\\').ToUpperInvariant())))[..16]
+            : "");
     readonly Mutex mutex;
     public bool IsFirst { get; }
     CancellationTokenSource? cts;
@@ -137,7 +142,7 @@ public sealed class SingleInstance : IDisposable
             writer.Write(message);
             return true;
         }
-        catch (Exception e) when (e is TimeoutException or IOException) { return false; }
+        catch (Exception e) when (e is TimeoutException or IOException or UnauthorizedAccessException) { return false; }
     }
 
     public void Dispose()

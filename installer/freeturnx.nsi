@@ -1,4 +1,4 @@
-; Установщик FreeTurnX. Собирается scripts/build.sh:
+﻿; Установщик FreeTurnX. Собирается scripts/build.sh:
 ;   makensis -DVERSION=0.1.0 -DARCH=x64|arm64 -DSRC=build/x64 -DOUT=build/FreeTurnX-0.1.0-x64-setup.exe installer/freeturnx.nsi
 Unicode true
 ManifestDPIAware true
@@ -14,6 +14,7 @@ SetCompressor /SOLID lzma
 !define ROOT "${__FILEDIR__}/.."
 !define APP "FreeTurnX"
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\FreeTurnX"
+Var ReplaceExisting
 ; Клиент WebView2 Runtime (Evergreen): есть всегда на Windows 11, на Windows 10 - почти всегда.
 !define WEBVIEW2_KEY "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 
@@ -63,6 +64,16 @@ Function .onInit
     Abort
   ${EndIf}
   SetRegView 64
+  StrCpy $ReplaceExisting "0"
+  ReadRegStr $0 HKLM "${UNINST_KEY}" "InstallLocation"
+  ${If} $0 != ""
+    StrCpy $INSTDIR $0
+    IfSilent replacementConfirmed
+    MessageBox MB_YESNO|MB_ICONQUESTION "FreeTurnX уже установлен.$\r$\n$\r$\nДа — удалить установленную программу и установить ${VERSION}. Серверы и настройки сохранятся.$\r$\nНет — выйти из установщика." IDYES replacementConfirmed
+    Abort
+    replacementConfirmed:
+    StrCpy $ReplaceExisting "1"
+  ${EndIf}
 FunctionEnd
 
 ; Установщик работает с правами администратора; приложение запускаем от обычного пользователя
@@ -83,13 +94,22 @@ Section "FreeTurnX" Main
   SectionIn RO
   ; Ярлык и данные службы - для всех пользователей компьютера.
   SetShellVarContext all
+  ${If} $ReplaceExisting == "1"
+    IfFileExists "$INSTDIR\uninstall.exe" 0 replacementDone
+    ExecWait '"$INSTDIR\uninstall.exe" /S _?=$INSTDIR' $0
+    ${If} $0 != 0
+      MessageBox MB_ICONSTOP "Не удалось удалить предыдущую версию. Установка остановлена." /SD IDOK
+      Abort
+    ${EndIf}
+    replacementDone:
+  ${EndIf}
   SetOutPath "$INSTDIR"
   !insertmacro StopApp
-  File "${ROOT}/${SRC}/FreeTurnX.exe"
-  File "${ROOT}/${SRC}/freeturn-core.exe"
-  File "${ROOT}/${SRC}/freeturnd.exe"
-  File "${ROOT}/${SRC}/amnezia-box.exe"
-  File "${ROOT}/LICENSE"
+  File "${ROOT}\${SRC}\FreeTurnX.exe"
+  File "${ROOT}\${SRC}\freeturn-core.exe"
+  File "${ROOT}\${SRC}\freeturnd.exe"
+  File "${ROOT}\${SRC}\amnezia-box.exe"
+  File "${ROOT}\LICENSE"
 
   ; WebView2 - для окна капчи.
   ReadRegStr $0 HKLM "${WEBVIEW2_KEY}" "pv"
@@ -97,7 +117,7 @@ Section "FreeTurnX" Main
   ${If} $0 == ""
   ${AndIf} $1 == ""
     SetOutPath "$PLUGINSDIR"
-    File "${ROOT}/build/MicrosoftEdgeWebview2Setup.exe"
+    File "${ROOT}\build\MicrosoftEdgeWebview2Setup.exe"
     nsExec::Exec '"$PLUGINSDIR\MicrosoftEdgeWebview2Setup.exe" /silent /install'
     SetOutPath "$INSTDIR"
   ${EndIf}
@@ -115,7 +135,10 @@ Section "FreeTurnX" Main
   WriteRegStr HKCR "freeturn\DefaultIcon" "" '"$INSTDIR\FreeTurnX.exe",0'
   WriteRegStr HKCR "freeturn\shell\open\command" "" '"$INSTDIR\FreeTurnX.exe" "%1"'
 
+  Delete "$SMPROGRAMS\FreeTurnX.lnk"
+  SetShellVarContext current
   CreateShortcut "$SMPROGRAMS\FreeTurnX.lnk" "$INSTDIR\FreeTurnX.exe"
+  SetShellVarContext all
 
   WriteUninstaller "$INSTDIR\uninstall.exe"
   WriteRegStr HKLM "${UNINST_KEY}" "DisplayName" "FreeTurnX"
@@ -148,6 +171,9 @@ Section "Uninstall"
   RMDir /r "$APPDATA\FreeTurn\daemon"
   RMDir "$APPDATA\FreeTurn"
   Delete "$SMPROGRAMS\FreeTurnX.lnk"
+  SetShellVarContext current
+  Delete "$SMPROGRAMS\FreeTurnX.lnk"
+  SetShellVarContext all
   DeleteRegKey HKCR "freeturn"
   DeleteRegKey HKLM "${UNINST_KEY}"
   ; Автозапуск, если включали в настройках.

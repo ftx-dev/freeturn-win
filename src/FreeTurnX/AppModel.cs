@@ -112,7 +112,7 @@ public sealed class AppModel : INotifyPropertyChanged
 
     public void NotifyServers() { Persist(); ServersChanged?.Invoke(); Changed(nameof(ActiveServer)); }
     public void NotifyRouting() { Persist(); RoutingChanged?.Invoke(); Changed(nameof(ActiveProfile)); }
-    public void NotifySettings() { Persist(); Changed(nameof(Settings)); }
+    public void NotifySettings() { Persist(); ((App)Application.Current).ApplyAnimations(); Changed(nameof(Settings)); }
 
     public Server? ActiveServer => Servers.Active;
     public RoutingProfile? ActiveProfile => ActiveServer is { } s ? Routing.ProfileFor(s) : null;
@@ -362,7 +362,7 @@ public sealed class AppModel : INotifyPropertyChanged
     public string DisplayName(RoutingProfile profile) => profile.Id switch
     {
         "builtin-all" => L("Всё через VPN"),
-        "builtin-ru" => L("Российские сервисы напрямую"),
+        "builtin-ru" => L("РФ сервисы напрямую"),
         _ => profile.Name,
     };
 

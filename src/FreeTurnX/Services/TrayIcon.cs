@@ -128,5 +128,6 @@ public sealed class TrayIcon : IDisposable
         icon.Visible = false;
         icon.Dispose();
         current?.Dispose();
+        baseIcon.Dispose();
     }
 }

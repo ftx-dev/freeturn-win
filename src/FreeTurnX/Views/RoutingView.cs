@@ -39,16 +39,16 @@ public sealed class RoutingView : UserControl, IDisposable
         add.Click += (_, _) => { menu.PlacementTarget = add; menu.IsOpen = true; };
         list.SelectionChanged += (_, _) => { if (list.SelectedItem is ListBoxItem { Tag: string id }) { selectedId = id; ShowEditor(); } };
 
-        var left = new DockPanel { Width = 260 };
+        var left = new DockPanel();
         DockPanel.SetDock(add, Dock.Top);
         left.Children.Add(add);
         left.Children.Add(list);
         var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(280), MinWidth = 220, MaxWidth = 360 });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(5) });
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.Children.Add(left);
-        var line = new Border { Background = System.Windows.Media.Brushes.Gray, Opacity = 0.25 };
+        var line = new GridSplitter { Width = 5, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch, ResizeDirection = GridResizeDirection.Columns, ResizeBehavior = GridResizeBehavior.PreviousAndNext, Background = System.Windows.Media.Brushes.Gray, Opacity = 0.25 };
         Grid.SetColumn(line, 1);
         grid.Children.Add(line);
         Grid.SetColumn(editor, 2);
@@ -70,7 +70,7 @@ public sealed class RoutingView : UserControl, IDisposable
             row.Children.Add(icon);
             if (p.Id == model.Routing.SharedProfileId)
             {
-                var shared = new TextBlock { Text = L("общий"), FontSize = 12, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center };
+                var shared = new TextBlock { Text = L("общий"), Margin = new Thickness(12, 0, 0, 0), FontSize = 12, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center };
                 DockPanel.SetDock(shared, Dock.Right);
                 row.Children.Add(shared);
             }
@@ -145,15 +145,15 @@ sealed class ProfileEditor : UserControl
         mode.HorizontalAlignment = HorizontalAlignment.Left;
         top.Children.Add(mode);
 
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 10) };
+        var actions = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 10) };
         var share = Ui.Button(L("Сделать общим"), () => { model.Routing.SharedProfileId = profile.Id; model.NotifyRouting(); });
         share.IsEnabled = model.Routing.SharedProfileId != profile.Id;
         share.ToolTip = L("Общий профиль действует для серверов без собственного.");
         actions.Children.Add(share);
-        actions.Children.Add(Ui.Button(L("Клонировать"), () => { if (model.Routing.Clone(profile.Id) is { } c) select(c.Id); }));
-        actions.Children.Add(Ui.Button(L("Экспорт…"), Export));
+        actions.Children.Add(Ui.ActionIcon(L("Клонировать"), "M6,6 L18,6 18,20 6,20 Z M3,16 L2,16 2,2 14,2 14,3", () => { if (model.Routing.Clone(profile.Id) is { } c) select(c.Id); }));
+        actions.Children.Add(Ui.ActionIcon(L("Экспорт…"), "M10,14 L10,1 M5,6 L10,1 15,6 M2,12 L2,19 18,19 18,12", Export));
         if (!profile.BuiltIn)
-            actions.Children.Add(Ui.Button(L("Удалить"), () => { model.Routing.Remove(profile.Id); select(model.Routing.SharedProfileId); }));
+            actions.Children.Add(Ui.ActionIcon(L("Удалить"), "M2,4 L18,4 M7,4 L7,1 13,1 13,4 M4,4 L5,20 15,20 16,4 M8,8 L8,16 M12,8 L12,16", () => { model.Routing.Remove(profile.Id); select(model.Routing.SharedProfileId); }, Ui.Red));
         top.Children.Add(actions);
         DockPanel.SetDock(top, Dock.Top);
         root.Children.Add(top);
@@ -172,7 +172,22 @@ sealed class ProfileEditor : UserControl
         if (model.Connection.State.IsActive)
         {
             var note = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
-            var re = Ui.Button(L("Переподключить"), async () => { await model.Connection.DisconnectAsync(); await model.ConnectAsync(); });
+            var re = new Button { Content = L("Переподключить"), Padding = new Thickness(12, 6, 12, 6) };
+            re.Click += async (_, _) =>
+            {
+                re.IsEnabled = false;
+                re.Content = L("Переподключение...");
+                try
+                {
+                    await model.Connection.DisconnectAsync();
+                    await model.ConnectAsync();
+                }
+                finally
+                {
+                    re.Content = L("Переподключить");
+                    re.IsEnabled = true;
+                }
+            };
             DockPanel.SetDock(re, Dock.Right);
             note.Children.Add(re);
             note.Children.Add(Ui.Hint(L("Изменения применятся при следующем подключении.")));
@@ -315,7 +330,7 @@ sealed class RuleEditorWindow : Window
     void Render()
     {
         var ok = new Button { Content = L("Сохранить"), IsDefault = true, Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(0, 0, 8, 0) };
-        if (Application.Current.TryFindResource("AccentButtonStyle") is Style accent) ok.Style = accent;
+        if (Application.Current.TryFindResource("SmoothAccentButton") is Style accent) ok.Style = accent;
         var error = Ui.Hint(L("Такое значение движок не примет."), Ui.Red);
         void Validate()
         {

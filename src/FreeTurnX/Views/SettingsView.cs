@@ -50,6 +50,7 @@ public sealed class SettingsView : UserControl, IDisposable
                 Ui.Row(L("Язык"), Ui.Choice(s.Language, [("system", L("Как в системе")), ("ru", "Русский"), ("en", "English")], v => Set(x => x.Language = v)),
                     s.Language != L10n.Language ? L("Язык сменится после перезапуска приложения.") : null),
                 Ui.Row(L("Иконка"), IconPicker()),
+                Ui.Row(L("Отключить анимации"), Ui.Switch(s.DisableAnimations, v => Set(x => x.DisableAnimations = v))),
                 Ui.Row(L("Приватный режим"), Ui.Switch(s.PrivacyMode, v => Set(x => x.PrivacyMode = v)),
                     L("Скрывает адреса, ключи и ссылку на звонок на экране и в логах."))),
 
