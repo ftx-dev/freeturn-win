@@ -1,0 +1,6 @@
+[submodule "third_party/free-turn-proxy"]
+	path = third_party/free-turn-proxy
+	url = https://github.com/hackdiaz-dev/free-turn-proxy
+[submodule "third_party/amnezia-box"]
+	path = third_party/amnezia-box
+	url = https://github.com/amnezia-vpn/amnezia-box
