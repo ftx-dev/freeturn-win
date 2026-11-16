@@ -4,7 +4,7 @@
 (WireGuard / AmneziaWG) через TURN-реле звонка или напрямую, с маршрутизацией по программам, доменам и подсетям.
 Тот же функционал, что у [клиента для macOS](https://github.com/huhhuh78787878-collab/freeturn-macos).
 
-Новости и обновления — в [Telegram-канале](https://t.me/+ZVdbpZB0w_Q1MTdi).
+Новости и обновления - в [Telegram-канале](https://t.me/+ZVdbpZB0w_Q1MTdi).
 
 ## Возможности
 
@@ -39,21 +39,6 @@
 Адаптер туннеля — **wintun**, официальный подписанный драйвер проекта WireGuard; он встроен в движок, свои драйверы не нужны.
 Закрыли приложение или оно упало — служба снимает туннель сама. Данные: `%LOCALAPPDATA%\FreeTurn`.
 
-## Сборка
-
-На macOS или Linux с Go 1.26 и Docker:
-
-```bash
-git submodule update --init
-scripts/build.sh        # dist/: FreeTurnX-<версия>-x64-setup.exe, …-arm64-setup.exe и SHA256SUMS.txt
-```
-
-Тесты:
-
-```bash
-cd helper && go test -ldflags=-checklinkname=0 ./...
-docker run --rm -v "$PWD:/src" -w /src mcr.microsoft.com/dotnet/sdk:10.0 dotnet test src/FreeTurn.Core.Tests
-```
 
 ## Ограничения
 
