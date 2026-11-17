@@ -11,11 +11,13 @@ namespace FreeTurnX.Views;
 public sealed class SettingsView : UserControl, IDisposable
 {
     readonly AppModel model;
+    readonly ScrollViewer scroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     string? loginItemError;
 
     public SettingsView(AppModel model)
     {
         this.model = model;
+        Content = scroll;
         model.PropertyChanged += OnChanged;
         model.Updater.PropertyChanged += OnChanged;
         Render();
@@ -36,6 +38,7 @@ public sealed class SettingsView : UserControl, IDisposable
 
     void Render()
     {
+        var offset = scroll.VerticalOffset;
         var s = model.Settings;
         var manualCaptcha = model.ActiveServer?.Client.ManualCaptcha == true;
         var page = new System.Collections.Generic.List<UIElement>
@@ -96,7 +99,13 @@ public sealed class SettingsView : UserControl, IDisposable
                         MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK) await model.ResetAllAsync();
             }, danger: true))),
         };
-        Content = Ui.Page([.. page]);
+        var updated = Ui.Page([.. page]);
+        var content = updated.Content;
+        updated.Content = null;
+        scroll.Content = content;
+        // Updating a checkbox rebuilds its rows, not the scroll container.
+        scroll.UpdateLayout();
+        scroll.ScrollToVerticalOffset(offset);
     }
 
     /// <summary>Три превью-кнопки: выбранная подсвечена.</summary>

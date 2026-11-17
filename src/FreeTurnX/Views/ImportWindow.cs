@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using FreeTurn.Core;
@@ -11,9 +12,12 @@ public sealed class ImportWindow : Window
     public ImportWindow(AppModel model, ImportDraft draft)
     {
         Title = L("Импорт подключения");
-        Width = 520;
-        SizeToContent = SizeToContent.Height;
-        ResizeMode = ResizeMode.NoResize;
+        Width = Math.Min(560, SystemParameters.WorkArea.Width - 32);
+        Height = Math.Min(600, SystemParameters.WorkArea.Height - 32);
+        MinWidth = Math.Min(400, Width);
+        MinHeight = Math.Min(320, Height);
+        MaxHeight = SystemParameters.WorkArea.Height - 16;
+        ResizeMode = ResizeMode.CanResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
 
@@ -25,7 +29,7 @@ public sealed class ImportWindow : Window
         var rows = new System.Collections.Generic.List<UIElement>
         {
             Ui.Row(L("Имя сервера"), name),
-            Ui.Row(L("Адрес"), new TextBlock { Text = model.Masked(draft.Link.Peer) }),
+            Ui.Row(L("Адрес"), new TextBlock { Text = model.Masked(draft.Link.Peer), TextWrapping = TextWrapping.Wrap }, stretchControl: true),
             Ui.Row(L("Подключение"), new TextBlock { Text = draft.Link.Provider == Provider.Direct ? L("Напрямую") : L("Через релей") }),
             Ui.Row(L("Тип доступа"), new TextBlock { Text = access }),
         };
@@ -56,7 +60,18 @@ public sealed class ImportWindow : Window
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
         buttons.Children.Add(ok);
         buttons.Children.Add(cancel);
-        panel.Children.Add(buttons);
-        Content = panel;
+        // Keep confirmation actions visible even with long links or warnings.
+        var layout = new Grid();
+        layout.RowDefinitions.Add(new RowDefinition());
+        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        layout.Children.Add(new ScrollViewer
+        {
+            Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+        });
+        buttons.Margin = new Thickness(20, 12, 20, 16);
+        Grid.SetRow(buttons, 1);
+        layout.Children.Add(buttons);
+        Content = layout;
     }
 }
