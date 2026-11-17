@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using FreeTurn.Core;
@@ -103,11 +104,36 @@ public sealed class HomeView : UserControl, IDisposable
         });
         var glyph = new Viewbox { Child = drawing, Width = 48, Height = 48, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         var face = new Grid { Width = 160, Height = 160 };
-        var scale = new ScaleTransform(1, 1);
-        face.RenderTransform = scale;
-        face.RenderTransformOrigin = new Point(0.5, 0.5);
         face.Children.Add(new Ellipse { Width = 150, Height = 150, Stroke = new SolidColorBrush(top), StrokeThickness = 1, Opacity = 0.3 });
         face.Children.Add(circle);
+        if (state is ConnectionState.Starting or ConnectionState.Connecting or ConnectionState.CaptchaWait or ConnectionState.Stopping)
+        {
+            // Radius 59 keeps the white arc inside the 66px button radius.
+            var rotation = new RotateTransform(0, 80, 80);
+            var arc = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse("M80,21 A59,59 0 0 1 139,80"),
+                Stroke = Brushes.White, StrokeThickness = 2.5,
+                StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round,
+                RenderTransform = rotation, IsHitTestVisible = false,
+            };
+            var spinner = new Canvas { Width = 160, Height = 160, IsHitTestVisible = false };
+            spinner.Children.Add(arc);
+            face.Children.Add(spinner);
+            arc.Loaded += (_, _) =>
+            {
+                if (!Motion.Allowed) return;
+                // Preserve the phase when connection updates rebuild the page.
+                var phase = (System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency % 1.2) / 1.2 * 360;
+                var animation = new DoubleAnimation(phase, phase + 360, TimeSpan.FromSeconds(1.2))
+                {
+                    RepeatBehavior = RepeatBehavior.Forever,
+                };
+                Timeline.SetDesiredFrameRate(animation, 30);
+                rotation.BeginAnimation(RotateTransform.AngleProperty, animation);
+            };
+            arc.Unloaded += (_, _) => rotation.BeginAnimation(RotateTransform.AngleProperty, null);
+        }
         face.Children.Add(glyph);
         var button = new Button
         {
@@ -116,17 +142,6 @@ public sealed class HomeView : UserControl, IDisposable
             Template = PlainTemplate(),
         };
         System.Windows.Automation.AutomationProperties.SetName(button, state.IsActive ? L("Отключить") : L("Подключить"));
-        void AnimateFace(double value)
-        {
-            Motion.Animate(scale, ScaleTransform.ScaleXProperty, value);
-            Motion.Animate(scale, ScaleTransform.ScaleYProperty, value);
-        }
-        button.MouseEnter += (_, _) => AnimateFace(1.035);
-        button.MouseLeave += (_, _) => AnimateFace(1);
-        button.PreviewMouseLeftButtonDown += (_, _) => AnimateFace(0.97);
-        button.PreviewMouseLeftButtonUp += (_, _) => AnimateFace(button.IsMouseOver ? 1.035 : 1);
-        button.LostMouseCapture += (_, _) => AnimateFace(button.IsMouseOver ? 1.035 : 1);
-        button.Unloaded += (_, _) => { scale.BeginAnimation(ScaleTransform.ScaleXProperty, null); scale.BeginAnimation(ScaleTransform.ScaleYProperty, null); };
         button.Click += async (_, _) => await model.ToggleConnectionAsync();
         return button;
     }
