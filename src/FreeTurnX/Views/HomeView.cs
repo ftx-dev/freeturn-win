@@ -93,7 +93,7 @@ public sealed class HomeView : UserControl, IDisposable
             Fill = new LinearGradientBrush(top, bottom, 90),
             Stroke = new SolidColorBrush(Color.FromArgb(56, 255, 255, 255)),
             StrokeThickness = 1,
-            Effect = new DropShadowEffect { Color = bottom, BlurRadius = 20, ShadowDepth = 4, Opacity = 0.22 },
+            Effect = new DropShadowEffect { Color = top, BlurRadius = 26, ShadowDepth = 0, Opacity = 0.12 },
         };
         var drawing = new Canvas { Width = 24, Height = 24 };
         drawing.Children.Add(new System.Windows.Shapes.Path
@@ -104,6 +104,9 @@ public sealed class HomeView : UserControl, IDisposable
         });
         var glyph = new Viewbox { Child = drawing, Width = 48, Height = 48, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         var face = new Grid { Width = 160, Height = 160 };
+        var pressScale = new ScaleTransform(1, 1);
+        face.RenderTransform = pressScale;
+        face.RenderTransformOrigin = new Point(0.5, 0.5);
         face.Children.Add(new Ellipse { Width = 150, Height = 150, Stroke = new SolidColorBrush(top), StrokeThickness = 1, Opacity = 0.3 });
         face.Children.Add(circle);
         if (state is ConnectionState.Starting or ConnectionState.Connecting or ConnectionState.CaptchaWait or ConnectionState.Stopping)
@@ -142,6 +145,21 @@ public sealed class HomeView : UserControl, IDisposable
             Template = PlainTemplate(),
         };
         System.Windows.Automation.AutomationProperties.SetName(button, state.IsActive ? L("Отключить") : L("Подключить"));
+        // IsPressed also covers Space and cancelled mouse presses, without hover scaling.
+        var pressed = DependencyPropertyDescriptor.FromProperty(System.Windows.Controls.Primitives.ButtonBase.IsPressedProperty, typeof(Button));
+        void UpdatePress(object? sender, EventArgs args)
+        {
+            var size = button.IsPressed ? 0.975 : 1;
+            Motion.Animate(pressScale, ScaleTransform.ScaleXProperty, size, 100);
+            Motion.Animate(pressScale, ScaleTransform.ScaleYProperty, size, 100);
+        }
+        button.Loaded += (_, _) => pressed.AddValueChanged(button, UpdatePress);
+        button.Unloaded += (_, _) =>
+        {
+            pressed.RemoveValueChanged(button, UpdatePress);
+            pressScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            pressScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        };
         button.Click += async (_, _) => await model.ToggleConnectionAsync();
         return button;
     }

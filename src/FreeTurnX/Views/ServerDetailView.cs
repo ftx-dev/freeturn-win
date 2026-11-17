@@ -37,6 +37,7 @@ public sealed class ServerDetailView : UserControl, IDisposable
 
     void Save(Action<Server> change, bool rerender = false)
     {
+        if (Locked) return;
         change(server);
         model.Servers.Update(server.Copy());
         model.NotifyServers();
@@ -152,8 +153,17 @@ public sealed class ServerDetailView : UserControl, IDisposable
         page.Add(Ui.Card(Ui.Row(L("Подробное логирование"), Ui.Switch(c.DebugMode, v => Save(s => s.Client.DebugMode = v)))));
 
         var scroll = Ui.Page([.. page]);
-        ((Panel)scroll.Content).IsEnabled = !Locked;
-        if (Locked) ((Panel)scroll.Content).Children[0].IsEnabled = true;
+        if (Locked)
+        {
+            // Keep the explanation readable; every editor and action shares the
+            // same disabled appearance, including custom numeric/key controls.
+            var children = ((Panel)scroll.Content).Children;
+            for (var i = 1; i < children.Count; i++)
+            {
+                children[i].IsEnabled = false;
+                children[i].Opacity = 0.5;
+            }
+        }
         Content = scroll;
     }
 

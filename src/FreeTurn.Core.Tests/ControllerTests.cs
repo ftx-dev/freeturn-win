@@ -58,6 +58,18 @@ public class ControllerTests
     Task Connected(int streams = 3) => c.HandleCoreEventAsync(new CoreEvent.State(CorePhase.Connected, streams, 12, ""));
 
     [Fact]
+    public async Task StartingEventAlreadyIdentifiesTheLockedServer()
+    {
+        string? activeWhenStarting = null;
+        c.StateChanged += state =>
+        {
+            if (state is ConnectionState.Starting) activeWhenStarting = c.ActiveServerId;
+        };
+        await Connect();
+        Assert.Equal(server.Id, activeWhenStarting);
+    }
+
+    [Fact]
     public async Task EngineStartsOnlyAfterFirstConnected()
     {
         await Connect();

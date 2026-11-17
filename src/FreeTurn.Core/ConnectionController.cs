@@ -87,8 +87,8 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
         catch (Exception e) { Fail(new ConnectionFailure.Core(e.Message)); return; }
 
         var mySession = ++session;
-        State = new ConnectionState.Starting();
         ActiveServerId = server.Id;
+        State = new ConnectionState.Starting();
 
         var newEngine = makeEngine();
         try
