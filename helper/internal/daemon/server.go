@@ -12,7 +12,7 @@ import (
 
 // ProtocolVersion меняется вместе с протоколом сокета: приложение сверяет её и
 // предлагает переустановить службу при расхождении.
-const ProtocolVersion = "1"
+const ProtocolVersion = "2"
 
 type Config struct {
 	Socket   string

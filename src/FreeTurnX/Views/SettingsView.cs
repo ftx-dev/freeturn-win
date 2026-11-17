@@ -27,7 +27,7 @@ public sealed class SettingsView : UserControl, IDisposable
     void OnChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(AppModel.DaemonStatusText) or nameof(AppModel.InstallingDaemon) or nameof(AppModel.DaemonError)
-            or nameof(Updater.Phase) or nameof(AppModel.Settings)) Render();
+            or nameof(Updater.Phase) or nameof(AppModel.Settings) or nameof(AppModel.Connection)) Render();
     }
 
     void Set(Action<AppSettings> change)
@@ -76,6 +76,9 @@ public sealed class SettingsView : UserControl, IDisposable
                     manualCaptcha ? L("Недоступно, пока у активного сервера включён ручной ввод капчи.")
                                   : L("Проверку в фоне проходит встроенный браузер. Если не получится, откроется ручная капча."))),
 
+            Ui.Header(L("Экспериментальное")),
+            Socks5Panel(),
+
             Ui.Header(L("Обновления")),
             Ui.Card(
                 Ui.Row(L("Версия"), new TextBlock { Text = $"{Updater.CurrentVersion} · {Updater.Arch}" }),
@@ -109,6 +112,43 @@ public sealed class SettingsView : UserControl, IDisposable
     }
 
     /// <summary>Три превью-кнопки: выбранная подсвечена.</summary>
+    UIElement Socks5Panel()
+    {
+        var settings = model.Settings;
+        var proxy = settings.Socks5;
+        var busy = model.Connection.State.IsActive;
+        var rows = new System.Collections.Generic.List<UIElement>
+        {
+            Ui.Row(L("SOCKS5-клиент"), Ui.Switch(settings.Socks5Mode, v =>
+            {
+                if (!model.Connection.State.IsActive) Set(s => s.Socks5Mode = v);
+            }, enabled: !busy), L("Подключение к раздаче SOCKS5 на Android вместо обычного VPN. Запуск — кнопкой на главной.")),
+        };
+        if (settings.Socks5Mode)
+        {
+            var validation = Ui.Hint(L("Проверьте IP-адрес, порт и авторизацию SOCKS5 в настройках."), Ui.Orange);
+            void Validate() => validation.Visibility = proxy.IsValid ? Visibility.Collapsed : Visibility.Visible;
+            TextBox Field(string value, Action<string> save)
+            {
+                return Ui.Field(value, text => { if (!model.Connection.State.IsActive) { save(text); model.Persist(); Validate(); } });
+            }
+            rows.Add(Ui.Row(L("IP-адрес телефона"), Field(proxy.Address, v => proxy.Address = v.Trim()), L("Адрес из раздела раздачи SOCKS5 в Android-приложении. Оба устройства должны быть в одной сети.")));
+            rows.Add(Ui.Row(L("Порт SOCKS5"), Field(proxy.Port.ToString(), v => proxy.Port = int.TryParse(v, out var port) ? port : 0), L("По умолчанию 1080. Допустимо от 1 до 65535.")));
+            rows.Add(Ui.Row(L("Логин SOCKS5"), Field(proxy.Username, v => proxy.Username = v), L("Оставьте логин и пароль пустыми, если на Android авторизация выключена.")));
+            var password = new PasswordBox { Password = proxy.Password, MinWidth = 0 };
+            password.PasswordChanged += (_, _) => { if (!model.Connection.State.IsActive) { proxy.Password = password.Password; model.Persist(); Validate(); } };
+            rows.Add(Ui.Row(L("Пароль SOCKS5"), password));
+            rows.Add(Ui.Row(L("UDP через SOCKS5"), Ui.Switch(proxy.Udp, v => { if (!model.Connection.State.IsActive) Set(s => s.Socks5.Udp = v); }), L("Включайте, только если UDP включён в раздаче Android. DNS работает через TCP и без этой галочки.")));
+            rows.Add(Ui.Hint(L("Весь трафик направляется через телефон. Профили маршрутов FreeTurn в этом режиме не применяются.")));
+            Validate();
+            rows.Add(validation);
+        }
+        if (busy) rows.Add(Ui.Hint(L("Чтобы изменить режим или параметры SOCKS5, сначала отключите подключение.")));
+        var card = Ui.Card([.. rows]);
+        if (busy) { card.IsEnabled = false; card.Opacity = 0.55; }
+        return card;
+    }
+
     UIElement IconPicker()
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal };

@@ -32,7 +32,7 @@ public sealed class HomeView : UserControl, IDisposable
 
     void Render()
     {
-        if (model.Servers.List.Count == 0)
+        if (model.Servers.List.Count == 0 && !model.Socks5Mode)
         {
             var empty = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             empty.Children.Add(new TextBlock { Text = "", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 48, Opacity = 0.5, HorizontalAlignment = HorizontalAlignment.Center });
@@ -50,7 +50,20 @@ public sealed class HomeView : UserControl, IDisposable
         var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(Ui.Compact ? 12 : 24, Ui.Compact ? 40 : 60, Ui.Compact ? 12 : 24, 24), MaxWidth = Ui.Compact ? 350 : 620 };
         panel.Children.Add(PowerButton(state));
         panel.Children.Add(new TextBlock { Text = Title(state), FontSize = Ui.Compact ? 19 : 22, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 18, 0, 8) });
-        panel.Children.Add(ServerPicker(state));
+        if (model.Socks5Mode)
+        {
+            var proxy = model.Settings.Socks5;
+            var endpoint = LinkButton(proxy.Address.Length == 0 ? L("Настроить SOCKS5") : model.Masked($"{proxy.Address}:{proxy.Port}"), true);
+            endpoint.HorizontalAlignment = HorizontalAlignment.Center;
+            endpoint.Click += (_, _) => model.Section = Section.Settings;
+            panel.Children.Add(endpoint);
+            var transportHint = Ui.Hint(proxy.Udp ? L("SOCKS5 · TCP и UDP") : L("SOCKS5 · только TCP"));
+            transportHint.HorizontalAlignment = HorizontalAlignment.Center;
+            panel.Children.Add(transportHint);
+            if (state is ConnectionState.Connected)
+                panel.Children.Add(new TextBlock { Text = Formatters.Duration(model.Connection.ConnectedSince is { } since ? DateTime.Now - since : TimeSpan.Zero), HorizontalAlignment = HorizontalAlignment.Center, Opacity = 0.65 });
+        }
+        else panel.Children.Add(ServerPicker(state));
 
         if (model.CaptchaNeedsAttention)
         {
@@ -60,13 +73,20 @@ public sealed class HomeView : UserControl, IDisposable
             panel.Children.Add(b);
         }
         if (state is ConnectionState.Failed failed) panel.Children.Add(Failure(failed.Reason));
-        if (state is ConnectionState.Connected) panel.Children.Add(Stats());
-        if (model.ActiveProfile is { } profile)
+        if (state is ConnectionState.Connected && !model.Socks5Mode) panel.Children.Add(Stats());
+        if (!model.Socks5Mode && model.ActiveProfile is { } profile)
             panel.Children.Add(new TextBlock { Text = $"{L("Маршруты:")} {model.DisplayName(profile)}", Opacity = 0.65, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 14, 0, 0) });
         Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     }
 
-    string Title(ConnectionState state) => state switch
+    string Title(ConnectionState state) => model.Socks5Mode ? state switch
+    {
+        ConnectionState.Starting or ConnectionState.Connecting => L("Подключение к SOCKS5…"),
+        ConnectionState.Connected => L("SOCKS5 подключён"),
+        ConnectionState.Stopping => L("Отключение…"),
+        ConnectionState.Failed => L("Ошибка SOCKS5"),
+        _ => L("Подключиться к SOCKS5"),
+    } : state switch
     {
         ConnectionState.Starting => L("Запуск…"),
         ConnectionState.Connecting => L("Подключение…"),

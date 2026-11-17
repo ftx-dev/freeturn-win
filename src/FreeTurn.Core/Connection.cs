@@ -96,7 +96,7 @@ public sealed class DaemonException(DaemonErrorKind kind, string message = "") :
 public static class DaemonProtocol
 {
     /// <summary>Должна совпадать с daemon.ProtocolVersion в helper/internal/daemon/server.go.</summary>
-    public const string Version = "1";
+    public const string Version = "2";
     public const string PipeName = "freeturnd";
 }
 

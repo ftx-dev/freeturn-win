@@ -155,6 +155,8 @@ public sealed class ServersFile
 
 public sealed record AppSettings
 {
+    public bool Socks5Mode { get; set; }
+    public Socks5Settings Socks5 { get; set; } = new();
     public string Theme { get; set; } = "system";
     public bool DisableAnimations { get; set; }
     public bool CompactMode { get; set; }
@@ -177,6 +179,8 @@ public sealed record AppSettings
 
     internal void Normalize()
     {
+        Socks5 ??= new();
+        Socks5.Normalize();
         if (Theme is not ("system" or "light" or "dark")) Theme = "system";
         if (Language is not ("system" or "ru" or "en")) Language = "system";
         if (TunStack is not ("system" or "gvisor" or "mixed")) TunStack = "mixed";

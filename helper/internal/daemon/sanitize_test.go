@@ -53,6 +53,17 @@ func TestAcceptsMinimalWithProcessRules(t *testing.T) {
 	}
 }
 
+func TestAcceptsSocksClientAndTcpDNS(t *testing.T) {
+	raw := edit(t, func(c map[string]any) {
+		delete(c, "endpoints")
+		c["outbounds"] = []any{map[string]any{"type": "socks", "tag": "phone-proxy", "server": "192.168.1.20", "server_port": 1080, "version": "5", "network": "tcp"}}
+		c["dns"].(map[string]any)["servers"] = []any{map[string]any{"type": "tcp", "server": "1.1.1.1", "detour": "phone-proxy", "tag": "proxy-dns"}}
+	})
+	if _, err := Sanitize(raw); err != nil {
+		t.Fatalf("SOCKS5 client rejected: %v", err)
+	}
+}
+
 func TestLogIsRewritten(t *testing.T) {
 	out, err := Sanitize(edit(t, func(c map[string]any) {
 		c["log"] = map[string]any{"level": "debug", "output": "/etc/passwd"}
@@ -107,7 +118,7 @@ func TestRejectsForeignTypes(t *testing.T) {
 		c["inbounds"] = []any{map[string]any{"type": "mixed", "listen": "0.0.0.0", "listen_port": 1080}}
 	}), "inbound")
 	mustReject(t, edit(t, func(c map[string]any) {
-		c["outbounds"] = []any{map[string]any{"type": "socks", "server": "1.2.3.4"}}
+		c["outbounds"] = []any{map[string]any{"type": "http", "server": "1.2.3.4"}}
 	}), "outbound")
 	mustReject(t, edit(t, func(c map[string]any) {
 		c["endpoints"] = []any{map[string]any{"type": "tailscale"}}

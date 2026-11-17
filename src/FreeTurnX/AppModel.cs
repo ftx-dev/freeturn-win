@@ -83,7 +83,7 @@ public sealed class AppModel : INotifyPropertyChanged
     public void Start()
     {
         if (Settings.CheckUpdates) _ = CheckUpdatesOnLaunchAsync();
-        if (AutoConnect.ShouldConnect(Settings, ActiveServer is not null)) _ = ConnectAsync();
+        if (AutoConnect.ShouldConnect(Settings, HasConnectionTarget)) _ = ConnectAsync();
     }
 
     T Load<T>(string name, T fallback) where T : class
@@ -115,6 +115,8 @@ public sealed class AppModel : INotifyPropertyChanged
     public void NotifySettings() { Persist(); ((App)Application.Current).ApplyAnimations(); Changed(nameof(Settings)); }
 
     public Server? ActiveServer => Servers.Active;
+    public bool Socks5Mode => Connection.State.IsActive ? Connection.IsSocks5 : Settings.Socks5Mode;
+    public bool HasConnectionTarget => Socks5Mode || ActiveServer is not null;
     public RoutingProfile? ActiveProfile => ActiveServer is { } s ? Routing.ProfileFor(s) : null;
 
     public void SetActive(string id)
@@ -138,6 +140,13 @@ public sealed class AppModel : INotifyPropertyChanged
 
     public async Task ConnectAsync()
     {
+        if (Connection.State.IsActive) return;
+        if (Settings.Socks5Mode)
+        {
+            Logs.Clear();
+            await Connection.ConnectSocks5Async(Settings);
+            return;
+        }
         if (ActiveServer is not { } server) return;
         // Экранный лог - про текущую сессию; файл на диске хранит и прошлые.
         Logs.Clear();
@@ -151,7 +160,7 @@ public sealed class AppModel : INotifyPropertyChanged
             case ConnectionState.Connected when !Settings.WasConnected:
                 Settings.WasConnected = true;
                 Persist();
-                _ = MeasurePingAsync();
+                if (!Connection.IsSocks5) _ = MeasurePingAsync();
                 MaybeOfferTelegram();
                 break;
             case ConnectionState.Failed:
@@ -180,6 +189,8 @@ public sealed class AppModel : INotifyPropertyChanged
     public void Log(LogLine line)
     {
         var text = line.Text;
+        if (Settings.Socks5.Password.Length > 0)
+            text = Redactor.Redact(text, [Settings.Socks5.Password], maskAddresses: false);
         if (Settings.PrivacyMode) text = Redactor.Redact(text, Secrets);
         // Команду запуска часто копируют в чаты: ссылку на звонок и ключи прячем всегда.
         else if (text.StartsWith("Команда:")) text = Redactor.Redact(text, Secrets, maskAddresses: false);
@@ -374,6 +385,14 @@ public sealed class AppModel : INotifyPropertyChanged
         ConnectionFailure.BadWireGuard => L("Не удалось разобрать конфиг WireGuard"),
         ConnectionFailure.InvalidRule => L("В профиле маршрутов есть некорректное правило"),
         ConnectionFailure.NoNetwork => L("Нет сети"),
+        ConnectionFailure.Socks5 s => s.Error switch
+        {
+            Socks5Error.InvalidSettings => L("Проверьте IP-адрес, порт и авторизацию SOCKS5 в настройках."),
+            Socks5Error.Authentication => L("SOCKS5: сервер отклонил авторизацию. Проверьте логин и пароль."),
+            Socks5Error.Protocol => L("Сервер не отвечает по протоколу SOCKS5."),
+            Socks5Error.NetworkChanged => L("Сеть изменилась. Проверьте адрес телефона и подключитесь снова."),
+            _ => L("SOCKS5 недоступен. Включите раздачу на Android и подключите устройства к одной сети."),
+        },
         ConnectionFailure.DaemonNotInstalled => L("Нужна фоновая служба"),
         ConnectionFailure.DaemonVersionMismatch => L("Служба устарела"),
         ConnectionFailure.DaemonBusy => L("Службой сейчас управляет другое приложение"),

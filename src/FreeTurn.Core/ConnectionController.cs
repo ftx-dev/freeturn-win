@@ -9,6 +9,7 @@ public abstract record ConnectionFailure
     public sealed record BadWireGuard : ConnectionFailure;
     public sealed record InvalidRule : ConnectionFailure;
     public sealed record NoNetwork : ConnectionFailure;
+    public sealed record Socks5(Socks5Error Error) : ConnectionFailure;
     public sealed record DaemonNotInstalled : ConnectionFailure;
     public sealed record DaemonVersionMismatch : ConnectionFailure;
     public sealed record DaemonBusy : ConnectionFailure;
@@ -32,7 +33,8 @@ public abstract record ConnectionState
 /// <summary>Ведёт одно подключение: служба -> ядро -> (после первого connected) движок.
 /// До первого connected системная сеть не трогается: капча и подбор реле идут без туннеля.
 /// Все методы зовутся из потока интерфейса.</summary>
-public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngineControl> makeEngine, INetworkWatch network, Func<int> portPicker)
+public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngineControl> makeEngine, INetworkWatch network, Func<int> portPicker,
+    Func<Socks5Settings, CancellationToken, Task>? socksProbe = null)
 {
     ConnectionState state = new ConnectionState.Off();
     public ConnectionState State
@@ -47,6 +49,7 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
     /// <summary>Эквивалентная CLI-команда ядра - для экрана отладки.</summary>
     public string LaunchArgs { get; private set; } = "";
     public string? ActiveServerId { get; private set; }
+    public bool IsSocks5 { get; private set; }
 
     public event Action<ConnectionState>? StateChanged;
     public event Action? StatsChanged;
@@ -62,12 +65,14 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
     bool networkLost;
     /// <summary>Номер сессии: события прошлого ядра не должны оживлять новое подключение.</summary>
     int session;
+    CancellationTokenSource? socksCancellation;
 
     bool Running => State.IsActive && State is not ConnectionState.Stopping;
 
     public async Task ConnectAsync(Server server, RoutingProfile profile, AppSettings settings, string ownClientId)
     {
         if (State.IsActive) return;
+        IsSocks5 = false;
         var client = server.Client;
         if (string.IsNullOrWhiteSpace(client.ServerAddress)) { Fail(new ConnectionFailure.NoAddress()); return; }
         if (client.Provider == Provider.Relay && string.IsNullOrWhiteSpace(client.CallLink)) { Fail(new ConnectionFailure.NoCallLink()); return; }
@@ -132,6 +137,57 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
         network.Start();
     }
 
+    public async Task ConnectSocks5Async(AppSettings settings)
+    {
+        if (State.IsActive) return;
+        IsSocks5 = true;
+        var proxy = settings.Socks5 with { };
+        if (!proxy.IsValid) { Fail(new ConnectionFailure.Socks5(Socks5Error.InvalidSettings)); return; }
+        var net = network.Current();
+        if (net is null) { Fail(new ConnectionFailure.NoNetwork()); return; }
+        var config = Socks5EngineConfig.Build(proxy, settings.TunStack);
+        var mySession = ++session;
+        ActiveServerId = null;
+        LaunchArgs = "";
+        var cancellation = new CancellationTokenSource();
+        socksCancellation = cancellation;
+        State = new ConnectionState.Starting();
+        try
+        {
+            await (socksProbe ?? Socks5Probe.CheckAsync)(proxy, cancellation.Token);
+            if (mySession != session || !Running) return;
+            var newEngine = makeEngine();
+            engine = newEngine;
+            newEngine.EventReceived += ev => { if (session == mySession) _ = HandleEngineEventAsync(ev); };
+            var status = await newEngine.StatusAsync();
+            if (mySession != session || !Running) return;
+            if (status.Version != DaemonProtocol.Version) throw new DaemonException(DaemonErrorKind.VersionMismatch, status.Version);
+            if (status.Running) throw new DaemonException(DaemonErrorKind.Busy, "busy");
+            State = new ConnectionState.Connecting(0, 0);
+            await newEngine.StartAsync(config);
+            if (mySession != session || !Running) return;
+            engineUp = true;
+            lastNetwork = net;
+            network.Changed += OnNetworkChanged;
+            network.Start();
+            ConnectedSince = DateTime.Now;
+            State = new ConnectionState.Connected(0, 0);
+        }
+        catch (Exception e)
+        {
+            if (mySession != session || !Running) return;
+            var failure = e switch
+            {
+                Socks5Exception s => (ConnectionFailure)new ConnectionFailure.Socks5(s.Error),
+                DaemonException { Kind: DaemonErrorKind.NotInstalled } => new ConnectionFailure.DaemonNotInstalled(),
+                DaemonException { Kind: DaemonErrorKind.VersionMismatch } => new ConnectionFailure.DaemonVersionMismatch(),
+                DaemonException { Kind: DaemonErrorKind.Busy } => new ConnectionFailure.DaemonBusy(),
+                _ => new ConnectionFailure.Engine(e.Message),
+            };
+            await TeardownAsync(failure);
+        }
+    }
+
     public async Task DisconnectAsync()
     {
         if (!Running) return;
@@ -142,7 +198,7 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
 
     public async Task HandleCoreEventAsync(CoreEvent ev)
     {
-        if (!Running) return;
+        if (!Running || IsSocks5) return;
         switch (ev)
         {
             case CoreEvent.Hello h: CoreVersion = h.Version; break;
@@ -199,6 +255,12 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
 
     public void NetworkChanged(NetworkSnapshot? snapshot)
     {
+        if (Running && IsSocks5)
+        {
+            if (snapshot is null || !snapshot.SameAs(lastNetwork))
+                _ = TeardownAsync(new ConnectionFailure.Socks5(Socks5Error.NetworkChanged));
+            return;
+        }
         if (!Running || core is null) return;
         if (snapshot is null)
         {
@@ -238,6 +300,9 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
     {
         State = new ConnectionState.Stopping();
         session++;
+        socksCancellation?.Cancel();
+        socksCancellation?.Dispose();
+        socksCancellation = null;
         network.Stop();
         network.Changed -= OnNetworkChanged;
         var (oldEngine, oldCore) = (engine, core);

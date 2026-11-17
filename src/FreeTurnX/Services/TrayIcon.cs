@@ -45,7 +45,7 @@ public sealed class TrayIcon : IDisposable
         while (menu.Items.Count > 0) menu.Items[0].Dispose();
         var state = model.Connection.State;
         menu.Items.Add(new ToolStripMenuItem(StatusLine(state)) { Enabled = false });
-        if (state is ConnectionState.Connected)
+        if (state is ConnectionState.Connected && !model.Socks5Mode)
         {
             var s = model.Connection.Stats;
             menu.Items.Add(new ToolStripMenuItem($"↓ {Formatters.Rate(s.RxRate, L10n.IsEnglish)}   ↑ {Formatters.Rate(s.TxRate, L10n.IsEnglish)}") { Enabled = false });
@@ -54,9 +54,9 @@ public sealed class TrayIcon : IDisposable
         if (model.CaptchaNeedsAttention) menu.Items.Add(L("Пройти проверку"), null, (_, _) => model.ReopenCaptcha());
         menu.Items.Add(new ToolStripMenuItem(state.IsActive ? L("Отключить") : L("Подключить"), null, async (_, _) => await model.ToggleConnectionAsync())
         {
-            Enabled = model.ActiveServer is not null && state is not ConnectionState.Stopping,
+            Enabled = model.HasConnectionTarget && state is not ConnectionState.Stopping,
         });
-        if (model.Servers.List.Count > 0)
+        if (model.Servers.List.Count > 0 && !model.Socks5Mode)
         {
             var servers = new ToolStripMenuItem(L("Сервер")) { Enabled = !state.IsActive };
             foreach (var server in model.Servers.List)
@@ -73,7 +73,7 @@ public sealed class TrayIcon : IDisposable
         ConnectionState.Starting => L("Запуск…"),
         ConnectionState.Connecting => L("Подключение…"),
         ConnectionState.CaptchaWait => L("Проверка CAPTCHA"),
-        ConnectionState.Connected => $"{L("Подключено")} — {model.ActiveServer?.Name}",
+        ConnectionState.Connected => model.Socks5Mode ? L("SOCKS5 подключён") : $"{L("Подключено")} — {model.ActiveServer?.Name}",
         ConnectionState.Stopping => L("Отключение…"),
         ConnectionState.Failed => L("Ошибка"),
         _ => "FreeTurnX",

@@ -11,9 +11,9 @@ var (
 	topLevelKeys  = set("log", "dns", "inbounds", "endpoints", "outbounds", "route")
 	logLevels     = set("debug", "info", "warn", "error")
 	inboundTypes  = set("tun")
-	outboundTypes = set("direct")
+	outboundTypes = set("direct", "socks")
 	endpointTypes = set("wireguard", "awg")
-	dnsTypes      = set("udp", "local")
+	dnsTypes      = set("udp", "tcp", "local")
 	// Источники правил из файлов и сети: движок от root читал бы и писал их на диск.
 	routeForbidden = []string{"rule_set", "geoip", "geosite"}
 )
