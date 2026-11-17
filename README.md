@@ -6,6 +6,8 @@
 
 Новости и обновления - в [Telegram-канале](https://t.me/+ZVdbpZB0w_Q1MTdi).
 
+[Сайт FreeTurnX: Windows, macOS и Admin](https://ftx-dev.github.io/freeturn-win/).
+
 ## Скриншоты
 
 Версия 0.2.1, демонстрационные данные.

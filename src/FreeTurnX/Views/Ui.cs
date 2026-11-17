@@ -59,14 +59,14 @@ static class Ui
     }
 
     /// <summary>Строка: заголовок и (по желанию) серое описание слева, элемент справа.</summary>
-    public static Grid Row(string title, UIElement control, string? description = null, Brush? descriptionColor = null)
+    public static Grid Row(string title, UIElement control, string? description = null, Brush? descriptionColor = null, bool stretchControl = false)
     {
         var grid = new Grid { MinHeight = 32 };
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         // Editable text must not measure at its full content width: a long URL
         // otherwise consumes the label column and wraps its title vertically.
-        if (control is TextBox or PasswordBox)
+        if (control is TextBox or PasswordBox || stretchControl)
         {
             grid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
             grid.ColumnDefinitions[1].Width = new GridLength(2, GridUnitType.Star);

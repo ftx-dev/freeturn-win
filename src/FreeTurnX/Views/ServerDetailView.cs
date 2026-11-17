@@ -92,14 +92,28 @@ public sealed class ServerDetailView : UserControl, IDisposable
         };
         if (o.ObfEnabled)
         {
-            var keyPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            var keyPanel = new Grid();
+            keyPanel.ColumnDefinitions.Add(new ColumnDefinition());
+            keyPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var key = Secret(o.ObfKey, v => Save(s => s.Opts.ObfKey = v.Trim()), 280);
+            key.MinWidth = 0;
             key.FontFamily = new FontFamily("Consolas");
             keyPanel.Children.Add(key);
             var gen = Ui.Button(L("Сгенерировать"), () => Save(s => s.Opts.ObfKey = ObfProfile.GenerateKey(), rerender: true));
             gen.Margin = new Thickness(8, 0, 0, 0);
+            Grid.SetColumn(gen, 1);
+            if (Ui.Compact)
+            {
+                keyPanel.ColumnDefinitions.Clear();
+                keyPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                keyPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                Grid.SetColumn(gen, 0);
+                Grid.SetRow(gen, 1);
+                gen.HorizontalAlignment = HorizontalAlignment.Right;
+                gen.Margin = new Thickness(0, 8, 0, 0);
+            }
             keyPanel.Children.Add(gen);
-            obf.Add(Ui.Row(L("Ключ (64 hex)"), keyPanel));
+            obf.Add(Ui.Row(L("Ключ (64 hex)"), keyPanel, stretchControl: true));
             obf.Add(Ui.Row(L("Пейсинг, мс"), Number(o.ObfTimingMs, 0, ObfProfile.TimingMax, v => Save(s => s.Opts.ObfTimingMs = v), 5), L("0 — выкл")));
         }
         page.Add(Ui.Card([.. obf]));
