@@ -101,7 +101,9 @@ public sealed class TrayIcon : IDisposable
         current?.Dispose();
         current = next;
         // Подсказка значка ограничена 63 символами.
-        var tip = "FreeTurnX" + (Environment.GetEnvironmentVariable("FREETURN_DATA_DIR") is { Length: > 0 } ? " · Test" : "") + " — " + StatusLine(state);
+        var status = StatusLine(state);
+        var tip = "FreeTurnX" + (Environment.GetEnvironmentVariable("FREETURN_DATA_DIR") is { Length: > 0 } ? " · Test" : "");
+        if (status != "FreeTurnX") tip += " — " + status;
         icon.Text = tip.Length > 63 ? tip[..63] : tip;
     }
 

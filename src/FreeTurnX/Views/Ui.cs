@@ -64,6 +64,14 @@ static class Ui
         var grid = new Grid { MinHeight = 32 };
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        // Editable text must not measure at its full content width: a long URL
+        // otherwise consumes the label column and wraps its title vertically.
+        if (control is TextBox or PasswordBox)
+        {
+            grid.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+            grid.ColumnDefinitions[1].Width = new GridLength(2, GridUnitType.Star);
+            ((FrameworkElement)control).MinWidth = 0;
+        }
         var left = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 16, 0) };
         left.Children.Add(new TextBlock { Text = title, TextWrapping = TextWrapping.Wrap });
         if (!string.IsNullOrEmpty(description))

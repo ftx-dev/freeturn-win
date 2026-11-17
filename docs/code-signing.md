@@ -1,6 +1,6 @@
 # Code signing policy
 
-Статус: подготовка заявки в SignPath Foundation. Подпись ещё не предоставлена; опубликованная версия 0.2.0 не подписана.
+Статус: заявка в SignPath Foundation отправлена, ожидаем рассмотрения. Подпись ещё не предоставлена; опубликованная версия 0.2.0 не подписана.
 
 Запрашиваемая программа: [Free code signing provided by SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org). Эта строка обозначает выбранную программу, а не уже полученное одобрение.
 
