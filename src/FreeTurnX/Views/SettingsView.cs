@@ -51,6 +51,7 @@ public sealed class SettingsView : UserControl, IDisposable
                     s.Language != L10n.Language ? L("Язык сменится после перезапуска приложения.") : null),
                 Ui.Row(L("Иконка"), IconPicker()),
                 Ui.Row(L("Отключить анимации"), Ui.Switch(s.DisableAnimations, v => Set(x => x.DisableAnimations = v))),
+                Ui.Row(L("Компактный режим (экспериментальный)"), Ui.Switch(s.CompactMode, v => Set(x => x.CompactMode = v)), L("Окно 400 × 600 с навигацией сверху.")),
                 Ui.Row(L("Приватный режим"), Ui.Switch(s.PrivacyMode, v => Set(x => x.PrivacyMode = v)),
                     L("Скрывает адреса, ключи и ссылку на звонок на экране и в логах."))),
 
@@ -93,7 +94,7 @@ public sealed class SettingsView : UserControl, IDisposable
             {
                 if (MessageBox.Show(L("Подключение остановится, серверы, профили маршрутов и логи будут удалены."), L("Сбросить все настройки?"),
                         MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK) await model.ResetAllAsync();
-            }))),
+            }, danger: true))),
         };
         Content = Ui.Page([.. page]);
     }

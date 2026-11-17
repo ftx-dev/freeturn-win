@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="FreeTurnX — открытый VPN-клиент для Windows с WireGuard, AmneziaWG и маршрутизацией по приложениям и доменам.">
+<title>FreeTurnX для Windows</title>
+<style>
+:root{color-scheme:light dark;font:16px/1.65 system-ui,sans-serif}body{max-width:960px;margin:48px auto;padding:0 24px}h1{font-size:40px;line-height:1.2}h2{margin-top:40px}a{color:light-dark(#175cad,#8fc5ff)}.actions{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.button{border:1px solid currentColor;border-radius:8px;padding:10px 18px;text-decoration:none}.gallery{display:grid;grid-template-columns:1fr 1fr;gap:20px}figure{margin:0}img{width:100%;height:auto;border-radius:8px;border:1px solid #8884}figcaption{font-size:14px;opacity:.75}footer{margin-top:48px;border-top:1px solid #8884;padding-top:20px;font-size:14px}@media(max-width:650px){.gallery{grid-template-columns:1fr}body{margin:28px auto}h1{font-size:32px}}
+</style>
+<main>
+<h1>FreeTurnX для Windows</h1>
+<p>Открытый VPN-клиент для Windows 10 и 11. WireGuard и AmneziaWG, подключение напрямую или через TURN-релей, маршрутизация по приложениям, доменам и подсетям.</p>
+<div class="actions"><a class="button" href="https://github.com/ftx-dev/freeturn-win/releases/latest">Скачать для Windows</a><a class="button" href="https://github.com/ftx-dev/freeturn-win">Исходный код</a></div>
+<p>На странице релиза выберите <strong>x64</strong> для Intel/AMD или <strong>ARM64</strong> для Windows на ARM. Установщик сохраняет пользовательские настройки при обновлении.</p>
+<h2>Интерфейс</h2>
+<div class="gallery">
+<figure><img src="screenshots/home.png" alt="Главная страница FreeTurnX"><figcaption>Подключение и выбор сервера</figcaption></figure>
+<figure><img src="screenshots/servers.png" alt="Список серверов и настройки"><figcaption>Серверы</figcaption></figure>
+<figure><img src="screenshots/routing.png" alt="Профили маршрутизации"><figcaption>Маршруты</figcaption></figure>
+<figure><img src="screenshots/settings.png" alt="Настройки приложения"><figcaption>Настройки</figcaption></figure>
+</div>
+<h2 id="signing">Code signing policy</h2>
+<p>Готовим заявку на бесплатную подпись <a href="https://signpath.org/">SignPath Foundation</a>. Одобрение пока не получено, релиз 0.2.0 не подписан. Windows может показывать предупреждение SmartScreen.</p>
+<p>Программа: Free code signing provided by <a href="https://signpath.io/">SignPath.io</a>, certificate by SignPath Foundation — после одобрения заявки. <a href="https://github.com/ftx-dev/freeturn-win/blob/main/docs/code-signing.md">Политика подписи и ответственные</a>.</p>
+<h2>Приватность</h2>
+<p>Настройки и журналы хранятся локально. Для работы приложение обращается к выбранному VPN/relay-провайдеру, DNS, сервису CAPTCHA и, если включены обновления, GitHub. <a href="https://github.com/ftx-dev/freeturn-win/blob/main/docs/privacy.md">Политика обработки данных</a>.</p>
+</main>
+<footer>FreeTurnX · GPL-3.0 · <a href="https://github.com/ftx-dev/freeturn-win/issues">Сообщить о проблеме</a></footer>
+</html>

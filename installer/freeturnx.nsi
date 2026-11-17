@@ -147,7 +147,7 @@ Section "FreeTurnX" Main
   WriteRegStr HKLM "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKLM "${UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
   WriteRegStr HKLM "${UNINST_KEY}" "QuietUninstallString" '"$INSTDIR\uninstall.exe" /S'
-  WriteRegStr HKLM "${UNINST_KEY}" "URLInfoAbout" "https://github.com/huhhuh78787878-collab/freeturn-win"
+  WriteRegStr HKLM "${UNINST_KEY}" "URLInfoAbout" "https://github.com/ftx-dev/freeturn-win"
   WriteRegDWORD HKLM "${UNINST_KEY}" "NoModify" 1
   WriteRegDWORD HKLM "${UNINST_KEY}" "NoRepair" 1
 SectionEnd

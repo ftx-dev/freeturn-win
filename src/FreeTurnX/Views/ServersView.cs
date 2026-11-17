@@ -19,6 +19,8 @@ public sealed class ServersView : UserControl, IDisposable
     public ServersView(AppModel model)
     {
         this.model = model;
+        list.Background = System.Windows.Media.Brushes.Transparent;
+        list.ItemContainerStyle = (Style)Application.Current.Resources["SelectionItem"];
         selectedId = model.Servers.ActiveId;
 
         var add = new Button { Content = "＋  " + L("Добавить сервер"), Padding = new Thickness(12, 5, 12, 6), Margin = new Thickness(8, 8, 8, 4) };
@@ -37,7 +39,9 @@ public sealed class ServersView : UserControl, IDisposable
         };
 
         var left = new DockPanel { Width = 260 };
-        DockPanel.SetDock(add, Dock.Top);
+        left.SetResourceReference(Panel.BackgroundProperty, "CardBackgroundFillColorDefaultBrush");
+        DockPanel.SetDock(add, Dock.Bottom);
+        add.Margin = new Thickness(12);
         left.Children.Add(add);
         left.Children.Add(list);
         var grid = new Grid();
@@ -51,6 +55,17 @@ public sealed class ServersView : UserControl, IDisposable
         Grid.SetColumn(detail, 2);
         grid.Children.Add(detail);
         Content = grid;
+        if (Ui.Compact)
+        {
+            left.Width = double.NaN;
+            left.Height = 190;
+            grid.ColumnDefinitions.Clear();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition());
+            line.Visibility = Visibility.Collapsed;
+            Grid.SetColumn(detail, 0);
+            Grid.SetRow(detail, 1);
+        }
 
         model.ServersChanged += RenderList;
         RenderList();

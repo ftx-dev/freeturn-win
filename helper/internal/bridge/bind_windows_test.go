@@ -3,7 +3,6 @@
 package bridge
 
 import (
-	"encoding/binary"
 	"net"
 	"testing"
 
@@ -30,9 +29,8 @@ func TestBindIPv4(t *testing.T) {
 		t.Fatal("bindToInterface = false")
 	}
 	got, err := windows.GetsockoptInt(s, windows.IPPROTO_IP, ipUnicastIf)
-	var be [4]byte
-	binary.LittleEndian.PutUint32(be[:], uint32(got))
-	if err != nil || int(binary.BigEndian.Uint32(be[:])) != idx {
+	// IP_UNICAST_IF is set in network byte order, but getsockopt returns host order.
+	if err != nil || got != idx {
 		t.Fatalf("IP_UNICAST_IF = %d, %v; want %d", got, err, idx)
 	}
 }

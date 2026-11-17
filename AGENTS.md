@@ -1,7 +1,7 @@
 # FreeTurnX для Windows
 
 Нативный WPF-клиент для Windows 10 1809+ и Windows 11, архитектуры x64 и ARM64.
-Репозиторий: `huhhuh78787878-collab/freeturn-win`. Основная ветка: `main`.
+Репозиторий: `ftx-dev/freeturn-win`. Основная ветка: `main`.
 
 ## Устройство
 

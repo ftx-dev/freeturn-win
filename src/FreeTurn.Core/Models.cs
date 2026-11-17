@@ -157,6 +157,7 @@ public sealed record AppSettings
 {
     public string Theme { get; set; } = "system";
     public bool DisableAnimations { get; set; }
+    public bool CompactMode { get; set; }
     public string Language { get; set; } = "system";
     public bool PrivacyMode { get; set; }
     public bool AdvancedCaptcha { get; set; } = true;

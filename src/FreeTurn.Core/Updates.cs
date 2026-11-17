@@ -30,7 +30,7 @@ public sealed record AvailableUpdate(string Version, Uri SetupUrl, Uri? Checksum
 /// драйвер wintun в движке должен совпадать с процессором. Имя: FreeTurnX-&lt;версия&gt;-&lt;x64|arm64&gt;-setup.exe.</summary>
 public static class UpdateCheck
 {
-    public const string Repository = "huhhuh78787878-collab/freeturn-win";
+    public const string Repository = "ftx-dev/freeturn-win";
     public static readonly Uri LatestUrl = new($"https://api.github.com/repos/{Repository}/releases/latest");
 
     public static AvailableUpdate? Available(string json, string current, string arch)

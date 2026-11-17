@@ -46,9 +46,9 @@ public sealed class HomeView : UserControl, IDisposable
         }
 
         var state = model.Connection.State;
-        var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(24, 60, 24, 24), MaxWidth = 620 };
+        var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(Ui.Compact ? 12 : 24, Ui.Compact ? 40 : 60, Ui.Compact ? 12 : 24, 24), MaxWidth = Ui.Compact ? 350 : 620 };
         panel.Children.Add(PowerButton(state));
-        panel.Children.Add(new TextBlock { Text = Title(state), FontSize = 22, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 18, 0, 8) });
+        panel.Children.Add(new TextBlock { Text = Title(state), FontSize = Ui.Compact ? 19 : 22, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 18, 0, 8) });
         panel.Children.Add(ServerPicker(state));
 
         if (model.CaptchaNeedsAttention)
@@ -264,7 +264,7 @@ public sealed class HomeView : UserControl, IDisposable
         p.Children.Add(new TextBlock { Text = value, FontSize = 18, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 0) });
         var b = Ui.Card(p);
         b.Margin = new Thickness(4);
-        b.MinWidth = 170;
+        b.MinWidth = Ui.Compact ? 140 : 170;
         return b;
     }
 
@@ -281,7 +281,7 @@ sealed class UniformGrid3 : System.Windows.Controls.Primitives.UniformGrid
 {
     public UniformGrid3(params UIElement[] items)
     {
-        Columns = 3;
+        Columns = Ui.Compact ? 2 : 3;
         foreach (var i in items) Children.Add(i);
     }
 }

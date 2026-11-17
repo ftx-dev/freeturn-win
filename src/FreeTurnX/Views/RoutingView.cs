@@ -20,6 +20,8 @@ public sealed class RoutingView : UserControl, IDisposable
     public RoutingView(AppModel model)
     {
         this.model = model;
+        list.Background = System.Windows.Media.Brushes.Transparent;
+        list.ItemContainerStyle = (Style)Application.Current.Resources["SelectionItem"];
         selectedId = model.ActiveProfile?.Id ?? model.Routing.SharedProfileId;
         var add = new Button { Content = "＋  " + L("Добавить профиль"), Padding = new Thickness(12, 5, 12, 6), Margin = new Thickness(8, 8, 8, 4) };
         var menu = new ContextMenu();
@@ -40,7 +42,9 @@ public sealed class RoutingView : UserControl, IDisposable
         list.SelectionChanged += (_, _) => { if (list.SelectedItem is ListBoxItem { Tag: string id }) { selectedId = id; ShowEditor(); } };
 
         var left = new DockPanel();
-        DockPanel.SetDock(add, Dock.Top);
+        left.SetResourceReference(Panel.BackgroundProperty, "CardBackgroundFillColorDefaultBrush");
+        DockPanel.SetDock(add, Dock.Bottom);
+        add.Margin = new Thickness(12);
         left.Children.Add(add);
         left.Children.Add(list);
         var grid = new Grid();
@@ -54,6 +58,18 @@ public sealed class RoutingView : UserControl, IDisposable
         Grid.SetColumn(editor, 2);
         grid.Children.Add(editor);
         Content = grid;
+        if (Ui.Compact)
+        {
+            left.Height = 180;
+            grid.ColumnDefinitions.Clear();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            line.Visibility = Visibility.Collapsed;
+            Grid.SetColumn(editor, 0);
+            Grid.SetRow(editor, 1);
+            editor.Height = 600;
+            Content = new ScrollViewer { Content = grid, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        }
         model.RoutingChanged += RenderList;
         RenderList();
     }
@@ -162,6 +178,7 @@ sealed class ProfileEditor : UserControl
         var addRule = Ui.Button("＋  " + L("Добавить правило"), () => Edit(new RoutingRule { Kind = RuleKind.App, Action = profile.DefaultAction == RouteAction.Vpn ? RouteAction.Direct : RouteAction.Vpn }));
         addRule.IsEnabled = !profile.BuiltIn;
         bottom.Children.Add(addRule);
+        if (Ui.Compact) DockPanel.SetDock(addRule, Dock.Top);
         var stack = Ui.Choice(model.Settings.TunStack, [("mixed", "mixed"), ("system", "system"), ("gvisor", "gvisor")], v => { model.Settings.TunStack = v; model.NotifySettings(); }, width: 120);
         var stackRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
         stackRow.Children.Add(new TextBlock { Text = L("Тип туннеля"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });

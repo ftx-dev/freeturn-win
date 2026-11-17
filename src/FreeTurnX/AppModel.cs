@@ -22,7 +22,7 @@ public enum Section { Home, Servers, Routing, Logs, Settings, About }
 public sealed class AppModel : INotifyPropertyChanged
 {
     public const string TelegramUrl = "https://t.me/+ZVdbpZB0w_Q1MTdi";
-    public const string RepositoryUrl = "https://github.com/huhhuh78787878-collab/freeturn-win";
+    public const string RepositoryUrl = "https://github.com/ftx-dev/freeturn-win";
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action? ServersChanged;

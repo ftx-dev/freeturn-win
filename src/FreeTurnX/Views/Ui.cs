@@ -9,6 +9,7 @@ namespace FreeTurnX.Views;
 /// <summary>Кирпичики форм в духе настроек Windows 11: карточка, строка «подпись - элемент», сноска.</summary>
 static class Ui
 {
+    public static bool Compact => ((App)Application.Current).Model.Settings.CompactMode;
     public static void FadeIn(UIElement element)
     {
         if (!Motion.Allowed) return;
@@ -76,6 +77,15 @@ static class Ui
         if (control is FrameworkElement fe) fe.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(control, 1);
         grid.Children.Add(control);
+        if (Compact && control is not CheckBox)
+        {
+            grid.ColumnDefinitions.Clear();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetColumn(control, 0);
+            Grid.SetRow(control, 1);
+            left.Margin = new Thickness(0, 0, 0, 8);
+        }
         return grid;
     }
 
@@ -89,7 +99,7 @@ static class Ui
 
     public static ComboBox Choice<T>(T value, (T value, string title)[] options, Action<T> changed, double width = 220)
     {
-        var combo = new ComboBox { MinWidth = width };
+        var combo = new ComboBox { MinWidth = Compact ? Math.Min(width, 260) : width };
         foreach (var (v, title) in options) combo.Items.Add(new ComboBoxItem { Content = title, Tag = v });
         combo.SelectedIndex = Array.FindIndex(options, o => Equals(o.value, value));
         combo.SelectionChanged += (_, _) => { if (combo.SelectedItem is ComboBoxItem { Tag: T v }) changed(v); };
@@ -98,23 +108,24 @@ static class Ui
 
     public static TextBox Field(string value, Action<string> changed, double width = 320, string? placeholder = null)
     {
-        var box = new TextBox { Text = value, MinWidth = width, MaxWidth = 480 };
+        var box = new TextBox { Text = value, MinWidth = Compact ? Math.Min(width, 240) : width, MaxWidth = 480 };
         if (placeholder is not null) box.ToolTip = placeholder;
         box.TextChanged += (_, _) => changed(box.Text);
         return box;
     }
 
-    public static Button Button(string title, Action click, bool accent = false)
+    public static Button Button(string title, Action click, bool accent = false, bool danger = false)
     {
         var b = new Button { Content = title, Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(0, 0, 8, 0) };
         if (accent && Application.Current.TryFindResource("SmoothAccentButton") is Style style) b.Style = style;
+        if (danger) { b.Foreground = Red; b.BorderBrush = Red; }
         b.Click += (_, _) => click();
         return b;
     }
 
     public static ScrollViewer Page(params UIElement[] children)
     {
-        var panel = new StackPanel { Margin = new Thickness(24, 8, 24, 24), MaxWidth = 860 };
+        var panel = new StackPanel { Margin = new Thickness(Compact ? 12 : 24, 8, Compact ? 12 : 24, 24), MaxWidth = 860 };
         foreach (var c in children) panel.Children.Add(c);
         return new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     }

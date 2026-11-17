@@ -36,7 +36,7 @@
 
 ## Установка
 
-1. Скачайте установщик со [страницы релизов](https://github.com/huhhuh78787878-collab/freeturn-win/releases/latest):
+1. Скачайте установщик со [страницы релизов](https://github.com/ftx-dev/freeturn-win/releases/latest):
    - `FreeTurnX-…-x64-setup.exe` — обычные компьютеры на Intel и AMD;
    - `FreeTurnX-…-arm64-setup.exe` — компьютеры на ARM (Snapdragon).
 2. Запустите и подтвердите запрос администратора. SmartScreen может предупредить: «Подробнее» → «Выполнить в любом случае» — установщик не подписан сертификатом.

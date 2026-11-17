@@ -26,7 +26,13 @@ public sealed class TrayIcon : IDisposable
         baseIcon = AppIcons.Tray(iconVariant);
         icon = new NotifyIcon { Visible = true, ContextMenuStrip = new ContextMenuStrip() };
         icon.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) showWindow(); };
-        icon.ContextMenuStrip.Opening += (_, _) => BuildMenu(quit);
+        BuildMenu(quit);
+        icon.ContextMenuStrip.Opening += (_, e) =>
+        {
+            BuildMenu(quit);
+            // WinForms may mark an initially empty menu as cancelled before Opening.
+            e.Cancel = false;
+        };
         model.PropertyChanged += OnChanged;
         Update();
     }
@@ -36,7 +42,7 @@ public sealed class TrayIcon : IDisposable
     void BuildMenu(Action quit)
     {
         var menu = icon.ContextMenuStrip!;
-        menu.Items.Clear();
+        while (menu.Items.Count > 0) menu.Items[0].Dispose();
         var state = model.Connection.State;
         menu.Items.Add(new ToolStripMenuItem(StatusLine(state)) { Enabled = false });
         if (state is ConnectionState.Connected)
@@ -95,7 +101,7 @@ public sealed class TrayIcon : IDisposable
         current?.Dispose();
         current = next;
         // Подсказка значка ограничена 63 символами.
-        var tip = "FreeTurnX — " + StatusLine(state);
+        var tip = "FreeTurnX" + (Environment.GetEnvironmentVariable("FREETURN_DATA_DIR") is { Length: > 0 } ? " · Test" : "") + " — " + StatusLine(state);
         icon.Text = tip.Length > 63 ? tip[..63] : tip;
     }
 
