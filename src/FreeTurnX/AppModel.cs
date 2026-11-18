@@ -70,6 +70,7 @@ public sealed class AppModel : INotifyPropertyChanged
         Routing = Load("routing.json", Routing).Normalized();
         Settings = Load("settings.json", Settings);
         L10n.Language = Settings.Language;
+        foreach (var server in Servers.List) StreamLimits.Apply(server.Client, Settings.UnsafeStreamLimits);
 
         Connection.StateChanged += StateChanged;
         Connection.StatsChanged += () => Changed(nameof(Connection));
@@ -82,7 +83,7 @@ public sealed class AppModel : INotifyPropertyChanged
 
     public void Start()
     {
-        if (Settings.CheckUpdates) _ = CheckUpdatesOnLaunchAsync();
+        if (Settings.CheckUpdates && !PackageChannel.IsPackaged) _ = CheckUpdatesOnLaunchAsync();
         if (AutoConnect.ShouldConnect(Settings, HasConnectionTarget)) _ = ConnectAsync();
     }
 
@@ -110,9 +111,18 @@ public sealed class AppModel : INotifyPropertyChanged
         try { Store.Save(value, name); } catch (IOException) { }
     }
 
-    public void NotifyServers() { Persist(); ServersChanged?.Invoke(); Changed(nameof(ActiveServer)); }
+    public void NotifyServers() { foreach (var server in Servers.List) StreamLimits.Apply(server.Client, Settings.UnsafeStreamLimits); Persist(); ServersChanged?.Invoke(); Changed(nameof(ActiveServer)); }
     public void NotifyRouting() { Persist(); RoutingChanged?.Invoke(); Changed(nameof(ActiveProfile)); }
-    public void NotifySettings() { Persist(); ((App)Application.Current).ApplyAnimations(); Changed(nameof(Settings)); }
+    public void NotifySettings()
+    {
+        foreach (var server in Servers.List)
+        {
+            StreamLimits.Apply(server.Client, Settings.UnsafeStreamLimits);
+        }
+        Persist();
+        ((App)Application.Current).ApplyAnimations();
+        Changed(nameof(Settings));
+    }
 
     public Server? ActiveServer => Servers.Active;
     public bool Socks5Mode => Connection.State.IsActive && Connection.IsSocks5;
@@ -319,7 +329,7 @@ public sealed class AppModel : INotifyPropertyChanged
         await Updater.CheckAsync();
         if (Updater.Available is not { } update) return;
         var notes = update.Notes.Length == 0 ? L("Приложение перезапустится. VPN на время обновления отключится.") : update.Notes;
-        if (MessageBox.Show(notes, F("Доступна версия %@", update.Version), MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+        if (new AppDialog(F("Доступна версия %@", update.Version), notes, L("Обновить"), L("Отмена")).ShowDialog() == true)
             await InstallUpdateAsync(update);
     }
 
@@ -345,9 +355,8 @@ public sealed class AppModel : INotifyPropertyChanged
         if (Settings.TelegramPromptShown) return;
         Settings.TelegramPromptShown = true;
         Persist();
-        var answer = MessageBox.Show(L("Подпишитесь на Telegram-канал, чтобы первыми узнавать о новых версиях."),
-            L("Следите за обновлениями"), MessageBoxButton.YesNo, MessageBoxImage.Information);
-        if (answer == MessageBoxResult.Yes) OpenUrl(TelegramUrl);
+        var answer = new AppDialog(L("Следите за обновлениями"), L("Подпишитесь на Telegram-канал, чтобы первыми узнавать о новых версиях."), L("Открыть"), L("Отмена")).ShowDialog();
+        if (answer == true) OpenUrl(TelegramUrl);
     }
 
     public static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
@@ -380,7 +389,7 @@ public sealed class AppModel : INotifyPropertyChanged
     }
 
     public static void ShowImportError(string message) =>
-        MessageBox.Show(message, L("Ошибка импорта"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        new AppDialog(L("Ошибка импорта"), message, "OK", "").ShowDialog();
 
     // ---- Прочее
 

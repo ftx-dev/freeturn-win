@@ -53,6 +53,7 @@ public sealed class SettingsView : UserControl, IDisposable
                 Ui.Row(L("Язык"), Ui.Choice(s.Language, [("system", L("Как в системе")), ("ru", "Русский"), ("en", "English")], v => Set(x => x.Language = v)),
                     s.Language != L10n.Language ? L("Язык сменится после перезапуска приложения.") : null),
                 Ui.Row(L("Иконка"), IconPicker()),
+                Ui.Row(L("При закрытии окна"), Ui.Choice(s.CloseAction, [("ask", L("Спрашивать")), ("hide", L("Скрыть")), ("quit", L("Выйти"))], v => Set(x => x.CloseAction = v))),
                 Ui.Row(L("Отключить анимации"), Ui.Switch(s.DisableAnimations, v => Set(x => x.DisableAnimations = v))),
                 Ui.Row(L("Компактный режим"), Ui.Switch(s.CompactMode, v => Set(x => x.CompactMode = v)), L("Окно 400 × 600 с навигацией сверху.")),
                 Ui.Row(L("Приватный режим"), Ui.Switch(s.PrivacyMode, v => Set(x => x.PrivacyMode = v)),
@@ -77,13 +78,15 @@ public sealed class SettingsView : UserControl, IDisposable
                                   : L("Проверку в фоне проходит встроенный браузер. Если не получится, откроется ручная капча."))),
 
             Ui.Header(L("Экспериментальное")),
+            Ui.Card(Ui.Row(L("Увеличить ограничение на потоки (небезопасно)"), Ui.Switch(s.UnsafeStreamLimits,
+                v => Set(x => x.UnsafeStreamLimits = v), enabled: !model.Connection.State.IsActive))),
             Socks5Panel(),
 
             Ui.Header(L("Обновления")),
             Ui.Card(
                 Ui.Row(L("Версия"), new TextBlock { Text = $"{Updater.CurrentVersion} · {Updater.Arch}" }),
-                Ui.Row(L("Проверять при запуске"), Ui.Switch(s.CheckUpdates, v => Set(x => x.CheckUpdates = v)),
-                    L("Новые версии берутся из GitHub Releases, под процессор этого компьютера.")),
+                Ui.Row(L("Проверять при запуске"), Ui.Switch(s.CheckUpdates, v => Set(x => x.CheckUpdates = v), enabled: !PackageChannel.IsPackaged),
+                    PackageChannel.IsPackaged ? L("Обновлениями управляет Microsoft Store.") : L("Новые версии берутся из GitHub Releases, под процессор этого компьютера.")),
                 Ui.Row(model.Updater.StatusText.Length == 0 ? " " : model.Updater.StatusText, UpdateButton(),
                     descriptionColor: null)),
 
@@ -98,8 +101,7 @@ public sealed class SettingsView : UserControl, IDisposable
             Ui.Header(L("Сброс")),
             Ui.Card(Ui.Row(L("Сбросить все настройки"), Ui.Button(L("Сбросить"), async () =>
             {
-                if (MessageBox.Show(L("Подключение остановится, серверы, профили маршрутов и логи будут удалены."), L("Сбросить все настройки?"),
-                        MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK) await model.ResetAllAsync();
+                if (new AppDialog(L("Сбросить все настройки?"), L("Подключение остановится, серверы, профили маршрутов и логи будут удалены."), L("Сбросить"), L("Отмена")).ShowDialog() == true) await model.ResetAllAsync();
             }, danger: true))),
         };
         var updated = Ui.Page([.. page]);
@@ -182,6 +184,7 @@ public sealed class SettingsView : UserControl, IDisposable
 
     UIElement DaemonButtons()
     {
+        if (PackageChannel.IsPackaged) return new TextBlock { Text = L("Службой управляет установщик MSIX."), TextWrapping = TextWrapping.Wrap };
         var panel = new StackPanel { Orientation = Orientation.Horizontal, IsEnabled = !model.InstallingDaemon && !model.Connection.State.IsActive };
         panel.Children.Add(Ui.Button(L("Переустановить"), async () => await model.ReinstallDaemonAsync()));
         panel.Children.Add(Ui.Button(L("Удалить службу"), async () => await model.UninstallDaemonAsync()));

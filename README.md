@@ -8,6 +8,9 @@
 
 [Сайт FreeTurnX: Windows, macOS и Admin](https://ftx-dev.github.io/freeturn-win/).
 
+Microsoft Store: [подготовка MSIX и требования к публикации](docs/microsoft-store.md).
+Приложение пока не опубликовано в Store; ссылка на карточку появится после сертификации.
+
 ## Скриншоты
 
 Версия 0.2.1, демонстрационные данные.

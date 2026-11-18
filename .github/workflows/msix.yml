@@ -1,0 +1,39 @@
+name: Microsoft Store packages
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+permissions:
+  contents: read
+jobs:
+  package:
+    if: vars.STORE_IDENTITY_NAME != '' && vars.STORE_PUBLISHER != ''
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: helper/go.mod
+          cache-dependency-path: helper/go.sum
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: choco install nsis --no-progress -y
+      - run: dotnet test src/FreeTurn.Core.Tests -c Release
+      - shell: pwsh
+        run: ./scripts/Build-Windows.ps1
+      - name: Build validated unsigned Store upload packages
+        shell: pwsh
+        env:
+          IDENTITY: ${{ vars.STORE_IDENTITY_NAME }}
+          PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
+        run: ./scripts/Package-MSIX.ps1 -IdentityName $env:IDENTITY -Publisher $env:PUBLISHER -PublisherDisplayName $env:DISPLAY_NAME
+      - uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store-upload
+          path: dist/msix/*.msix
+          if-no-files-found: error

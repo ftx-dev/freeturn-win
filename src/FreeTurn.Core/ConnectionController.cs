@@ -75,6 +75,7 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
         if (State.IsActive) return;
         IsSocks5 = false;
         var client = server.Client;
+          StreamLimits.Apply(client, settings.UnsafeStreamLimits);
         if (string.IsNullOrWhiteSpace(client.ServerAddress)) { Fail(new ConnectionFailure.NoAddress()); return; }
         if (client.Provider == Provider.Relay && string.IsNullOrWhiteSpace(client.CallLink)) { Fail(new ConnectionFailure.NoCallLink()); return; }
         if (!client.WireGuardActive) { Fail(new ConnectionFailure.NoWireGuard()); return; }

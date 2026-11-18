@@ -26,6 +26,7 @@ public static class DaemonInstaller
 
     static async Task RunElevatedAsync(string verb)
     {
+        if (PackageChannel.IsPackaged) throw new InvalidOperationException(Strings.L("Службой управляет установщик MSIX."));
         var info = new ProcessStartInfo(Paths.DaemonExe, verb) { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden };
         Process? p;
         try { p = Process.Start(info); }

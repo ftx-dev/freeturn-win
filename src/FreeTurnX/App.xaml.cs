@@ -70,8 +70,11 @@ public partial class App : Application
     }
 
     /// <summary>«Выйти»: сначала VPN, потом приложение - туннель не должен пережить его.</summary>
+    public bool IsQuitting { get; private set; }
     public async void Quit()
     {
+        if (IsQuitting) return;
+        IsQuitting = true;
         await Model.Connection.DisconnectAsync();
         tray?.Dispose();
         Model.Shutdown();

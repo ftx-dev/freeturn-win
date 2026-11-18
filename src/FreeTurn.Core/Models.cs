@@ -155,6 +155,8 @@ public sealed class ServersFile
 
 public sealed record AppSettings
 {
+    public bool UnsafeStreamLimits { get; set; }
+    public string CloseAction { get; set; } = "ask";
     public bool Socks5Mode { get; set; }
     public Socks5Settings Socks5 { get; set; } = new();
     public string Theme { get; set; } = "system";

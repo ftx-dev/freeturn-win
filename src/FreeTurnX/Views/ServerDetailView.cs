@@ -32,6 +32,11 @@ public sealed class ServerDetailView : UserControl, IDisposable
 
     void OnModelChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(AppModel.Settings))
+        {
+            server = model.Servers.List.First(s => s.Id == serverId).Copy();
+            Render();
+        }
         if (e.PropertyName == nameof(AppModel.Connection) && Locked != lockedShown) Render();
     }
 
@@ -80,8 +85,8 @@ public sealed class ServerDetailView : UserControl, IDisposable
         {
             page.Add(Ui.Header(L("Производительность")));
             page.Add(Ui.Card(
-                Ui.Row(L("Потоки"), Number(c.Threads, 1, 24, v => Save(s => s.Client.Threads = v))),
-                Ui.Row(L("Потоков на аккаунт"), Number(c.StreamsPerCred, 1, 24, v => Save(s => s.Client.StreamsPerCred = v)))));
+                Ui.Row(L("Потоки"), Number(c.Threads, 1, model.Settings.UnsafeStreamLimits ? 96 : 24, v => Save(s => s.Client.Threads = v))),
+                Ui.Row(L("Потоков на аккаунт"), Number(c.StreamsPerCred, 1, model.Settings.UnsafeStreamLimits ? 48 : 24, v => Save(s => s.Client.StreamsPerCred = v)))));
             page.Add(Ui.Hint(L("Рекомендуется 8–12 потоков: больше — выше риск блокировки со стороны сервиса звонков.")));
         }
 

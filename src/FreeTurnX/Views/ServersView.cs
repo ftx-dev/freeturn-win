@@ -129,8 +129,7 @@ public sealed class ServersView : UserControl, IDisposable
         menu.Items.Add(new Separator());
         var delete = Item(L("Удалить"), () =>
         {
-            if (MessageBox.Show(F("Сервер «%@» и все его настройки будут удалены из приложения.", s.Name), L("Удалить сервер?"),
-                    MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+            if (new AppDialog(L("Удалить сервер?"), F("Сервер «%@» и все его настройки будут удалены из приложения.", s.Name), L("Удалить"), L("Отмена")).ShowDialog() != true) return;
             model.Servers.Remove(s.Id);
             model.NotifyServers();
         });
@@ -192,9 +191,10 @@ static class Prompt
 {
     public static string? Ask(string title, string label, string value)
     {
-        var box = new TextBox { Text = value, MinWidth = 320, Margin = new Thickness(0, 6, 0, 12) };
+        var box = new TextBox { Text = value, MinWidth = 0, Margin = new Thickness(0, 6, 0, 12) };
         var ok = new Button { Content = L("Сохранить"), IsDefault = true, Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(0, 0, 8, 0) };
         var cancel = new Button { Content = L("Отмена"), IsCancel = true, Padding = new Thickness(14, 5, 14, 6) };
+        if (Application.Current.TryFindResource("SmoothAccentButton") is Style accent) ok.Style = accent;
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
         buttons.Children.Add(ok);
         buttons.Children.Add(cancel);
@@ -204,7 +204,8 @@ static class Prompt
         panel.Children.Add(buttons);
         var window = new Window
         {
-            Title = title, Content = panel, SizeToContent = SizeToContent.WidthAndHeight, ResizeMode = ResizeMode.NoResize,
+            Title = title, Content = panel, Width = Math.Min(460, SystemParameters.WorkArea.Width - 32), MaxHeight = SystemParameters.WorkArea.Height - 32,
+            SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
             WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = Application.Current.MainWindow, ShowInTaskbar = false,
         };
         ok.Click += (_, _) => window.DialogResult = true;

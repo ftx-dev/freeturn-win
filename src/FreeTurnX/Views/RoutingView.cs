@@ -121,8 +121,7 @@ public sealed class RoutingView : UserControl, IDisposable
         }
         catch (ProfileTransferException e)
         {
-            MessageBox.Show(e.Message == ProfileTransfer.UnsupportedVersion ? L("Файл создан более новой версией приложения.") : L("Это не файл профиля маршрутов FreeTurn."),
-                L("Не удалось"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            new AppDialog(L("Не удалось"), e.Message == ProfileTransfer.UnsupportedVersion ? L("Файл создан более новой версией приложения.") : L("Это не файл профиля маршрутов FreeTurn."), "OK", "").ShowDialog();
         }
     }
 
@@ -342,9 +341,10 @@ sealed class RuleEditorWindow : Window
     {
         Rule = rule;
         Title = L("Правило");
-        Width = 560;
-        SizeToContent = SizeToContent.Height;
-        ResizeMode = ResizeMode.NoResize;
+        Width = Math.Min(560, SystemParameters.WorkArea.Width - 32);
+        Height = Math.Min(390, SystemParameters.WorkArea.Height - 32);
+        MaxHeight = SystemParameters.WorkArea.Height - 16;
+        ResizeMode = ResizeMode.CanResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
         Render();
@@ -372,7 +372,7 @@ sealed class RuleEditorWindow : Window
         if (Rule.Kind == RuleKind.App)
         {
             var path = new TextBlock { Text = Rule.Value.Length == 0 ? "—" : Rule.Value, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 260, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-            var panel = new StackPanel { Orientation = Orientation.Horizontal };
+            var panel = new WrapPanel();
             panel.Children.Add(path);
             panel.Children.Add(Ui.Button(L("Запущенные…"), () =>
             {
@@ -401,7 +401,7 @@ sealed class RuleEditorWindow : Window
         var root = new StackPanel { Margin = new Thickness(20) };
         root.Children.Add(Ui.Card(
             Ui.Row(L("Что"), kind),
-            Ui.Row(L("Значение"), valueControl, Rule.Kind == RuleKind.App ? L("Программа (.exe) или папка: тогда правило действует на все программы внутри.") : null),
+            Ui.Row(L("Значение"), valueControl, Rule.Kind == RuleKind.App ? L("Программа (.exe) или папка: тогда правило действует на все программы внутри.") : null, stretchControl: true),
             Ui.Row(L("Действие"), action)));
         root.Children.Add(error);
         var cancel = new Button { Content = L("Отмена"), IsCancel = true, Padding = new Thickness(14, 5, 14, 6) };
@@ -409,8 +409,12 @@ sealed class RuleEditorWindow : Window
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
         buttons.Children.Add(ok);
         buttons.Children.Add(cancel);
-        root.Children.Add(buttons);
-        Content = root;
+        var layout = new DockPanel();
+        buttons.Margin = new Thickness(20, 8, 20, 16);
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        layout.Children.Add(buttons);
+        layout.Children.Add(new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+        Content = layout;
         Validate();
     }
 }
@@ -423,8 +427,8 @@ sealed class AppPickerWindow : Window
     public AppPickerWindow()
     {
         Title = L("Запущенные программы");
-        Width = 520;
-        Height = 560;
+        Width = Math.Min(520, SystemParameters.WorkArea.Width - 32);
+        Height = Math.Min(560, SystemParameters.WorkArea.Height - 32);
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
         var search = new TextBox { Margin = new Thickness(12, 12, 12, 8) };
@@ -451,6 +455,7 @@ sealed class AppPickerWindow : Window
         list.MouseDoubleClick += (_, _) => Pick(list);
         var ok = new Button { Content = L("Выбрать"), IsDefault = true, Padding = new Thickness(14, 5, 14, 6), Margin = new Thickness(12, 0, 12, 12), HorizontalAlignment = HorizontalAlignment.Right };
         ok.Click += (_, _) => Pick(list);
+        if (Application.Current.TryFindResource("SmoothAccentButton") is Style accent) ok.Style = accent;
         var root = new DockPanel();
         DockPanel.SetDock(search, Dock.Top);
         DockPanel.SetDock(ok, Dock.Bottom);

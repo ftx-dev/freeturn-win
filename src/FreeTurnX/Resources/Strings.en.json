@@ -1,4 +1,10 @@
 {
+  "Скрыть или выйти из приложения?": "Hide or quit the application?",
+  "Запомнить мой выбор": "Remember my choice",
+  "Скрыть": "Hide",
+  "Обновить": "Update",
+  "Открыть": "Open",
+  "Увеличить ограничение на потоки (небезопасно)": "Increase stream limits (unsafe)",
   "Компактный режим": "Compact mode",
   "Окно 400 × 600 с навигацией сверху.": "A 400 × 600 window with navigation at the top.",
   "0 — выкл": "0 — off",
@@ -270,5 +276,9 @@
   "Подключение к SOCKS5…": "Connecting to SOCKS5…",
   "SOCKS5 подключён": "SOCKS5 connected",
   "Ошибка SOCKS5": "SOCKS5 error",
-  "Подключиться к SOCKS5": "Connect to SOCKS5"
+  "Подключиться к SOCKS5": "Connect to SOCKS5",
+  "При закрытии окна": "When closing the window",
+  "Спрашивать": "Ask every time",
+  "Обновлениями управляет Microsoft Store.": "Updates are managed by Microsoft Store.",
+  "Службой управляет установщик MSIX.": "The service is managed by the MSIX installer."
 }

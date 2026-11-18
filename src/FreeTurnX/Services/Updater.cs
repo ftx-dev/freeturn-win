@@ -51,6 +51,7 @@ public sealed class Updater : INotifyPropertyChanged
 
     public async Task CheckAsync()
     {
+        if (PackageChannel.IsPackaged) { PackageChannel.OpenUpdates(); return; }
         if (Phase is UpdatePhase.Checking or UpdatePhase.Downloading or UpdatePhase.Installing) return;
         Phase = UpdatePhase.Checking;
         try
@@ -71,6 +72,7 @@ public sealed class Updater : INotifyPropertyChanged
     /// <summary>Скачивает и запускает установщик; beforeQuit - отключить VPN перед выходом.</summary>
     public async Task InstallAsync(AvailableUpdate update, Func<Task> beforeQuit, Action quit)
     {
+        if (PackageChannel.IsPackaged) { PackageChannel.OpenUpdates(); return; }
         Phase = UpdatePhase.Downloading;
         try
         {

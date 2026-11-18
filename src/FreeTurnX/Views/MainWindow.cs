@@ -153,8 +153,16 @@ public sealed class MainWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        if (((App)Application.Current).IsQuitting) return;
         // Окно можно закрыть: приложение остаётся в трее и держит подключение.
         e.Cancel = true;
-        Hide();
+        if (model.Settings.CloseAction == "hide") { Hide(); return; }
+        if (model.Settings.CloseAction == "quit") { ((App)Application.Current).Quit(); return; }
+        var dialog = new AppDialog(L("Скрыть или выйти из приложения?"), "", L("Скрыть"), L("Выйти"), remember: true);
+        var result = dialog.ShowDialog();
+        if (!dialog.HasChoice) return;
+        if (dialog.Remember) { model.Settings.CloseAction = result == true ? "hide" : "quit"; model.Persist(); }
+        if (result == true) Hide();
+        else ((App)Application.Current).Quit();
     }
 }

@@ -29,6 +29,7 @@ public static class AppIcons
 
     public static void UpdateStartMenu(string variant)
     {
+        if (PackageChannel.IsPackaged) return; // Package manifest owns Start menu registration.
         if (shortcutVariant == variant) return;
         // Development/test copies must never redirect the installed shortcut.
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FREETURN_DATA_DIR")) ||
