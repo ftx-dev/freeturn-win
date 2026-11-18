@@ -18,6 +18,7 @@ public sealed class MainWindow : Window
     readonly DockPanel sidebar = new() { Margin = new Thickness(4, 8, 12, 8) };
     readonly ComboBox compactNav = new() { Margin = new Thickness(12, 8, 12, 8), MinHeight = 36 };
     bool compact;
+    bool closePromptOpen;
     readonly Border loadError = new() { Padding = new Thickness(12, 8, 12, 8), Background = new SolidColorBrush(Color.FromArgb(60, 255, 200, 0)), Visibility = Visibility.Collapsed };
 
     static readonly (Section section, string glyph, string title)[] Sections =
@@ -156,10 +157,14 @@ public sealed class MainWindow : Window
         if (((App)Application.Current).IsQuitting) return;
         // Окно можно закрыть: приложение остаётся в трее и держит подключение.
         e.Cancel = true;
+          if (closePromptOpen) return;
         if (model.Settings.CloseAction == "hide") { Hide(); return; }
         if (model.Settings.CloseAction == "quit") { ((App)Application.Current).Quit(); return; }
         var dialog = new AppDialog(L("Скрыть или выйти из приложения?"), "", L("Скрыть"), L("Выйти"), remember: true);
-        var result = dialog.ShowDialog();
+          bool? result;
+          closePromptOpen = true;
+          try { result = dialog.ShowDialog(); }
+          finally { closePromptOpen = false; }
         if (!dialog.HasChoice) return;
         if (dialog.Remember) { model.Settings.CloseAction = result == true ? "hide" : "quit"; model.Persist(); }
         if (result == true) Hide();
