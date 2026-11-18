@@ -98,9 +98,15 @@ public sealed class RoutingView : UserControl, IDisposable
         ShowEditor();
     }
 
-    void ShowEditor() => editor.Content = model.Routing.Profiles.FirstOrDefault(p => p.Id == selectedId) is { } profile
-        ? new ProfileEditor(model, profile, id => { selectedId = id; model.NotifyRouting(); })
-        : null;
+    void ShowEditor()
+    {
+        var scroll = Content as ScrollViewer;
+        var offset = scroll?.VerticalOffset ?? 0;
+        editor.Content = model.Routing.Profiles.FirstOrDefault(p => p.Id == selectedId) is { } profile
+            ? new ProfileEditor(model, profile, id => { selectedId = id; model.NotifyRouting(); }) : null;
+        scroll?.UpdateLayout();
+        scroll?.ScrollToVerticalOffset(offset);
+    }
 
     void Import()
     {

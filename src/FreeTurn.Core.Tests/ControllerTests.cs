@@ -36,6 +36,18 @@ sealed class FakeNetwork : INetworkWatch
 
 public class ControllerTests
 {
+    [Theory]
+    [InlineData("ERROR endpoint/wireguard[vpn]: unable to update bind: invalid argument")]
+    [InlineData("ERROR endpoint/wireguard[vpn]: failed to send handshake initiation: wsasendmsg: invalid pointer")]
+    public async Task TransportFailureRemovesTunnelInsteadOfLeavingGreenStatus(string message)
+    {
+        await c.ConnectAsync(server, new RoutingProfile(), new AppSettings(), "test");
+        await c.HandleEngineEventAsync(new EngineEvent.Log(message));
+        Assert.IsType<ConnectionState.Failed>(c.State);
+        Assert.True(engine.Stopped);
+        Assert.True(engine.Closed);
+        Assert.True(core.Terminated);
+    }
     readonly List<string> log = [];
     readonly FakeCore core;
     readonly FakeEngine engine;
@@ -81,6 +93,8 @@ public class ControllerTests
         await Connected();
         await Connected(5);
         Assert.Single(engine.Started);
+        Assert.Equal(new ConnectionState.Connecting(5, 12), c.State);
+        await c.HandleEngineEventAsync(new EngineEvent.Log("DEBUG endpoint/wireguard[vpn]: peer(test) - received handshake response"));
         Assert.Equal(new ConnectionState.Connected(5, 12), c.State);
         var peer = T.Obj(engine.Started[0])["endpoints"]![0]!["peers"]![0]!;
         Assert.Equal(41000, (int)peer["port"]!);

@@ -152,6 +152,7 @@ public sealed class ServerDetailView : UserControl, IDisposable
         page.Add(Ui.Header(L("Отладка")));
         page.Add(Ui.Card(Ui.Row(L("Подробное логирование"), Ui.Switch(c.DebugMode, v => Save(s => s.Client.DebugMode = v)))));
 
+        var offset = (Content as ScrollViewer)?.VerticalOffset ?? 0;
         var scroll = Ui.Page([.. page]);
         if (Locked)
         {
@@ -165,6 +166,8 @@ public sealed class ServerDetailView : UserControl, IDisposable
             }
         }
         Content = scroll;
+        scroll.UpdateLayout();
+        scroll.ScrollToVerticalOffset(offset);
     }
 
     UIElement TunnelEditor()

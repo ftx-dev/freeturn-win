@@ -14,6 +14,7 @@ SetCompressor /SOLID lzma
 !define APP "FreeTurnX"
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\FreeTurnX"
 Var ReplaceExisting
+Var KeepService
 ; Клиент WebView2 Runtime (Evergreen): есть всегда на Windows 11, на Windows 10 - почти всегда.
 !define WEBVIEW2_KEY "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 
@@ -158,11 +159,31 @@ FunctionEnd
 
 Section "Uninstall"
   SetShellVarContext all
+  StrCpy $KeepService "0"
+  IfSilent removeService
+  MessageBox MB_YESNO|MB_ICONQUESTION "Удалить также службу туннеля FreeTurnDaemon?" IDYES removeService
+  StrCpy $KeepService "1"
+  nsExec::Exec 'taskkill /IM FreeTurnX.exe /F'
+  Pop $0
+  nsExec::Exec 'sc.exe stop FreeTurnDaemon'
+  Pop $0
+  Goto serviceHandled
+  removeService:
   !insertmacro StopApp
+  nsExec::ExecToLog 'sc.exe delete FreeTurnDaemon'
+  Pop $0
+  ${If} $0 != 0
+  ${AndIf} $0 != 1060
+    MessageBox MB_ICONSTOP "Не удалось удалить службу FreeTurnDaemon. Код: $0. Удаление остановлено." /SD IDOK
+    Abort
+  ${EndIf}
+  serviceHandled:
   Delete "$INSTDIR\FreeTurnX.exe"
   Delete "$INSTDIR\freeturn-core.exe"
-  Delete "$INSTDIR\freeturnd.exe"
-  Delete "$INSTDIR\amnezia-box.exe"
+  ${If} $KeepService != "1"
+    Delete "$INSTDIR\freeturnd.exe"
+    Delete "$INSTDIR\amnezia-box.exe"
+  ${EndIf}
   Delete "$INSTDIR\LICENSE"
   Delete "$INSTDIR\uninstall.exe"
   RMDir "$INSTDIR"

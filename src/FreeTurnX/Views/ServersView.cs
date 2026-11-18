@@ -142,6 +142,8 @@ public sealed class ServersView : UserControl, IDisposable
 
     void ShowDetail()
     {
+        if (detail.Content is ServerDetailView && Equals(detail.Tag, selectedId)) return;
+        detail.Tag = selectedId;
         (detail.Content as IDisposable)?.Dispose();
         var server = model.Servers.List.FirstOrDefault(s => s.Id == selectedId);
         detail.Content = server is null

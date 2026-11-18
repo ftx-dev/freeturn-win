@@ -61,6 +61,7 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
     IEngineControl? engine;
     string engineConfig = "";
     bool engineUp;
+    bool handshakeConfirmed;
     NetworkSnapshot? lastNetwork;
     bool networkLost;
     /// <summary>Номер сессии: события прошлого ядра не должны оживлять новое подключение.</summary>
@@ -124,6 +125,7 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
         core = newCore;
         engineConfig = builtEngineConfig;
         engineUp = false;
+        handshakeConfirmed = false;
         lastNetwork = net;
         networkLost = false;
 
@@ -234,9 +236,14 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
                                 return;
                             }
                             if (mySession != session || !Running) return;
-                            ConnectedSince = DateTime.Now;
+                            _ = CheckHandshakeDeadlineAsync(mySession);
                         }
-                        State = new ConnectionState.Connected(st.Streams, st.Total);
+                        if (handshakeConfirmed)
+                        {
+                            ConnectedSince ??= DateTime.Now;
+                            State = new ConnectionState.Connected(st.Streams, st.Total);
+                        }
+                        else State = new ConnectionState.Connecting(st.Streams, st.Total);
                         break;
                 }
                 break;
@@ -248,7 +255,23 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
         if (!Running) return;
         switch (ev)
         {
-            case EngineEvent.Log l: Log(LogLevel.Info, LogSource.Engine, l.Line); break;
+            case EngineEvent.Log l:
+                Log(LogLevel.Info, LogSource.Engine, l.Line);
+                if (!IsSocks5 && l.Line.Contains("received handshake response", StringComparison.OrdinalIgnoreCase))
+                {
+                    handshakeConfirmed = true;
+                    if (engineUp && State is ConnectionState.Connecting pending)
+                    {
+                        ConnectedSince ??= DateTime.Now;
+                        State = new ConnectionState.Connected(pending.Streams, pending.Total);
+                    }
+                }
+                // These are transport failures, not a usable tunnel. Do not leave
+                // the UI green and system routes installed after a failed bind.
+                if (l.Line.Contains("unable to update bind", StringComparison.OrdinalIgnoreCase)
+                    || l.Line.Contains("failed to send handshake initiation", StringComparison.OrdinalIgnoreCase))
+                    await TeardownAsync(new ConnectionFailure.Engine(l.Line));
+                break;
             case EngineEvent.Exited x: await TeardownAsync(new ConnectionFailure.Engine(x.Tail)); break;
         }
     }
@@ -295,6 +318,13 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
 
     void Fail(ConnectionFailure failure) => State = new ConnectionState.Failed(failure);
 
+    async Task CheckHandshakeDeadlineAsync(int expectedSession)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(30));
+        if (session == expectedSession && Running && !handshakeConfirmed)
+            await TeardownAsync(new ConnectionFailure.Engine("WireGuard: сервер не подтвердил handshake за 30 секунд."));
+    }
+
     /// <summary>Сворачивает всё. Сначала движок - чтобы система не осталась с туннелем в мёртвый порт.</summary>
     async Task TeardownAsync(ConnectionFailure? failure)
     {
@@ -310,8 +340,9 @@ public sealed class ConnectionController(Func<ICoreControl> makeCore, Func<IEngi
         core = null;
         if (oldEngine is not null)
         {
-            await oldEngine.StopAsync();
-            oldEngine.Close();
+            try { await oldEngine.StopAsync().WaitAsync(TimeSpan.FromSeconds(8)); }
+            catch (Exception e) { Log(LogLevel.Error, LogSource.App, e.Message); }
+            finally { oldEngine.Close(); }
         }
         oldCore?.Send(new CoreCommand.Stop());
         oldCore?.Terminate();

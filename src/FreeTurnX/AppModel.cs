@@ -115,7 +115,7 @@ public sealed class AppModel : INotifyPropertyChanged
     public void NotifySettings() { Persist(); ((App)Application.Current).ApplyAnimations(); Changed(nameof(Settings)); }
 
     public Server? ActiveServer => Servers.Active;
-    public bool Socks5Mode => Connection.State.IsActive ? Connection.IsSocks5 : Settings.Socks5Mode;
+    public bool Socks5Mode => Connection.State.IsActive && Connection.IsSocks5;
     public bool HasConnectionTarget => Socks5Mode || ActiveServer is not null;
     public RoutingProfile? ActiveProfile => ActiveServer is { } s ? Routing.ProfileFor(s) : null;
 
@@ -141,16 +141,17 @@ public sealed class AppModel : INotifyPropertyChanged
     public async Task ConnectAsync()
     {
         if (Connection.State.IsActive) return;
-        if (Settings.Socks5Mode)
-        {
-            Logs.Clear();
-            await Connection.ConnectSocks5Async(Settings);
-            return;
-        }
         if (ActiveServer is not { } server) return;
         // Экранный лог - про текущую сессию; файл на диске хранит и прошлые.
         Logs.Clear();
         await Connection.ConnectAsync(server, Routing.ProfileFor(server), Settings, Store.OwnClientId());
+    }
+
+    public async Task ConnectSocks5Async()
+    {
+        if (Connection.State.IsActive) return;
+        Logs.Clear();
+        await Connection.ConnectSocks5Async(Settings);
     }
 
     void StateChanged(ConnectionState state)
@@ -322,8 +323,21 @@ public sealed class AppModel : INotifyPropertyChanged
             await InstallUpdateAsync(update);
     }
 
-    public Task InstallUpdateAsync(AvailableUpdate update) =>
-        Updater.InstallAsync(update, () => Connection.DisconnectAsync(), () => ((App)Application.Current).Quit());
+    public async Task InstallUpdateAsync(AvailableUpdate update)
+    {
+        if (Updater.Phase is UpdatePhase.Downloading or UpdatePhase.Installing) return;
+        var status = new System.Windows.Controls.TextBlock { Text = L("Загрузка…"), Margin = new Thickness(0, 0, 0, 12) };
+        var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(24) };
+        panel.Children.Add(status);
+        panel.Children.Add(new System.Windows.Controls.ProgressBar { IsIndeterminate = true, Height = 6 });
+        var window = new Window { Title = F("Обновить до %@", update.Version), Width = 380, SizeToContent = SizeToContent.Height,
+            ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterScreen, Content = panel };
+        void Changed(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => status.Text = Updater.StatusText;
+        Updater.PropertyChanged += Changed;
+        window.Show();
+        try { await Updater.InstallAsync(update, () => Connection.DisconnectAsync(), () => ((App)Application.Current).Quit()); }
+        finally { Updater.PropertyChanged -= Changed; window.Close(); }
+    }
 
     /// <summary>Как на Android: один раз предложить подписаться на канал - после первого удачного подключения.</summary>
     void MaybeOfferTelegram()

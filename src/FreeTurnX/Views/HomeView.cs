@@ -76,7 +76,9 @@ public sealed class HomeView : UserControl, IDisposable
         if (state is ConnectionState.Connected && !model.Socks5Mode) panel.Children.Add(Stats());
         if (!model.Socks5Mode && model.ActiveProfile is { } profile)
             panel.Children.Add(new TextBlock { Text = $"{L("Маршруты:")} {model.DisplayName(profile)}", Opacity = 0.65, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 14, 0, 0) });
-        Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Content = Ui.Compact
+            ? new Viewbox { Child = panel, Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly, VerticalAlignment = VerticalAlignment.Top }
+            : new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     }
 
     string Title(ConnectionState state) => model.Socks5Mode ? state switch

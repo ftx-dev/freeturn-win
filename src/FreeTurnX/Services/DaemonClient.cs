@@ -60,7 +60,13 @@ public sealed class DaemonClient(SynchronizationContext ui, string pipeName = Da
             // Ответ («busy») может уже лежать в канале - его дочитает поток чтения.
             try { await writer!.WriteLineAsync(body.ToJsonString()); } catch (IOException) { }
         }
-        var reply = await tcs.Task;
+        JsonObject reply;
+        try { reply = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(35)); }
+        catch (TimeoutException)
+        {
+            Close();
+            throw new DaemonException(DaemonErrorKind.Failed, "Таймаут ответа службы туннеля");
+        }
         if ((bool?)reply["ok"] == true) return reply;
         var err = (string?)reply["err"] ?? "";
         throw new DaemonException(err == "busy" ? DaemonErrorKind.Busy : DaemonErrorKind.Failed, err);

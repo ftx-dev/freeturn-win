@@ -1,5 +1,5 @@
 {
-  "Компактный режим (экспериментальный)": "Compact mode (experimental)",
+  "Компактный режим": "Compact mode",
   "Окно 400 × 600 с навигацией сверху.": "A 400 × 600 window with navigation at the top.",
   "0 — выкл": "0 — off",
   "CAPTCHA решается…": "Solving CAPTCHA…",
@@ -249,7 +249,6 @@
   "Отключить анимации": "Disable animations",
   "Экспериментальное": "Experimental",
   "SOCKS5-клиент": "SOCKS5 client",
-  "Подключение к раздаче SOCKS5 на Android вместо обычного VPN. Запуск — кнопкой на главной.": "Connect to SOCKS5 sharing on Android instead of the regular VPN. Start with the button on Home.",
   "IP-адрес телефона": "Phone IP address",
   "Адрес из раздела раздачи SOCKS5 в Android-приложении. Оба устройства должны быть в одной сети.": "Use the address shown in SOCKS5 sharing in the Android app. Both devices must be on the same network.",
   "Порт SOCKS5": "SOCKS5 port",

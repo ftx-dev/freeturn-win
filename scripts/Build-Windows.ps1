@@ -9,6 +9,7 @@ $previousOS = $env:GOOS
 $previousArch = $env:GOARCH
 Push-Location $root
 try {
+    & "$PSScriptRoot/Patch-Engine.ps1"
     New-Item -ItemType Directory -Force build | Out-Null
     if (-not (Test-Path build/MicrosoftEdgeWebview2Setup.exe)) {
         Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile build/MicrosoftEdgeWebview2Setup.exe -UseBasicParsing

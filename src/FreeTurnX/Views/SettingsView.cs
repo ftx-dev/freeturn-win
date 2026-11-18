@@ -54,7 +54,7 @@ public sealed class SettingsView : UserControl, IDisposable
                     s.Language != L10n.Language ? L("Язык сменится после перезапуска приложения.") : null),
                 Ui.Row(L("Иконка"), IconPicker()),
                 Ui.Row(L("Отключить анимации"), Ui.Switch(s.DisableAnimations, v => Set(x => x.DisableAnimations = v))),
-                Ui.Row(L("Компактный режим (экспериментальный)"), Ui.Switch(s.CompactMode, v => Set(x => x.CompactMode = v)), L("Окно 400 × 600 с навигацией сверху.")),
+                Ui.Row(L("Компактный режим"), Ui.Switch(s.CompactMode, v => Set(x => x.CompactMode = v)), L("Окно 400 × 600 с навигацией сверху.")),
                 Ui.Row(L("Приватный режим"), Ui.Switch(s.PrivacyMode, v => Set(x => x.PrivacyMode = v)),
                     L("Скрывает адреса, ключи и ссылку на звонок на экране и в логах."))),
 
@@ -119,12 +119,12 @@ public sealed class SettingsView : UserControl, IDisposable
         var busy = model.Connection.State.IsActive;
         var rows = new System.Collections.Generic.List<UIElement>
         {
-            Ui.Row(L("SOCKS5-клиент"), Ui.Switch(settings.Socks5Mode, v =>
+            Ui.Row(L("SOCKS5-клиент"), Ui.Button(busy && model.Connection.IsSocks5 ? L("Отключить") : L("Подключить"), async () =>
             {
-                if (!model.Connection.State.IsActive) Set(s => s.Socks5Mode = v);
-            }, enabled: !busy), L("Подключение к раздаче SOCKS5 на Android вместо обычного VPN. Запуск — кнопкой на главной.")),
+                if (model.Connection.State.IsActive && model.Connection.IsSocks5) await model.Connection.DisconnectAsync();
+                else if (!model.Connection.State.IsActive) await model.ConnectSocks5Async();
+            })),
         };
-        if (settings.Socks5Mode)
         {
             var validation = Ui.Hint(L("Проверьте IP-адрес, порт и авторизацию SOCKS5 в настройках."), Ui.Orange);
             void Validate() => validation.Visibility = proxy.IsValid ? Visibility.Collapsed : Visibility.Visible;
@@ -145,7 +145,11 @@ public sealed class SettingsView : UserControl, IDisposable
         }
         if (busy) rows.Add(Ui.Hint(L("Чтобы изменить режим или параметры SOCKS5, сначала отключите подключение.")));
         var card = Ui.Card([.. rows]);
-        if (busy) { card.IsEnabled = false; card.Opacity = 0.55; }
+        if (busy)
+        {
+            for (var i = 1; i < rows.Count; i++) { rows[i].IsEnabled = false; rows[i].Opacity = 0.55; }
+            rows[0].IsEnabled = model.Connection.IsSocks5 && model.Connection.State is not ConnectionState.Stopping;
+        }
         return card;
     }
 

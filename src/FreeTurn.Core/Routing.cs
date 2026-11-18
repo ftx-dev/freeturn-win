@@ -224,7 +224,7 @@ public static class EngineConfig
             ["dns"] = dns,
             ["endpoints"] = new JsonArray(Endpoint(wg, corePort, hasV6)),
             ["inbounds"] = new JsonArray(tun),
-            ["log"] = new JsonObject { ["level"] = settings.Debug ? "debug" : "info" },
+            ["log"] = new JsonObject { ["level"] = "debug" },
             ["outbounds"] = new JsonArray(new JsonObject { ["tag"] = "direct", ["type"] = "direct" }),
             ["route"] = new JsonObject
             {
