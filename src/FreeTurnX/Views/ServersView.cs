@@ -99,7 +99,7 @@ public sealed class ServersView : UserControl, IDisposable
             if (s.Id == model.Servers.ActiveId)
             {
                 var mark = Ui.Glyph("");
-                mark.Foreground = Ui.Green;
+                mark.SetResourceReference(TextBlock.ForegroundProperty, "AccentFillColorDefaultBrush");
                 mark.ToolTip = L("Активный");
                 mark.Margin = new Thickness(12, 0, 4, 0);
                 mark.HorizontalAlignment = HorizontalAlignment.Right;

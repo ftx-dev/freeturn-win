@@ -258,7 +258,6 @@
   "Пароль SOCKS5": "SOCKS5 password",
   "UDP через SOCKS5": "UDP through SOCKS5",
   "Включайте, только если UDP включён в раздаче Android. DNS работает через TCP и без этой галочки.": "Enable only if UDP is enabled in Android sharing. DNS works over TCP without this option.",
-  "Весь трафик направляется через телефон. Профили маршрутов FreeTurn в этом режиме не применяются.": "Traffic is routed through the phone. FreeTurn routing profiles do not apply in this mode.",
   "Чтобы изменить режим или параметры SOCKS5, сначала отключите подключение.": "Disconnect before changing the mode or SOCKS5 settings.",
   "Проверьте IP-адрес, порт и авторизацию SOCKS5 в настройках.": "Check the SOCKS5 IP address, port and authentication in Settings.",
   "SOCKS5: сервер отклонил авторизацию. Проверьте логин и пароль.": "SOCKS5 authentication was rejected. Check your username and password.",

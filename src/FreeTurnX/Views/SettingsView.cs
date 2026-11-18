@@ -139,9 +139,13 @@ public sealed class SettingsView : UserControl, IDisposable
             password.PasswordChanged += (_, _) => { if (!model.Connection.State.IsActive) { proxy.Password = password.Password; model.Persist(); Validate(); } };
             rows.Add(Ui.Row(L("Пароль SOCKS5"), password));
             rows.Add(Ui.Row(L("UDP через SOCKS5"), Ui.Switch(proxy.Udp, v => { if (!model.Connection.State.IsActive) Set(s => s.Socks5.Udp = v); }), L("Включайте, только если UDP включён в раздаче Android. DNS работает через TCP и без этой галочки.")));
-            rows.Add(Ui.Hint(L("Весь трафик направляется через телефон. Профили маршрутов FreeTurn в этом режиме не применяются.")));
             Validate();
-            rows.Add(validation);
+            // Keep validation with the last field, without an empty separator
+            // when the validation message is collapsed.
+            var lastField = new StackPanel();
+            lastField.Children.Add(rows[^1]);
+            lastField.Children.Add(validation);
+            rows[^1] = lastField;
         }
         if (busy) rows.Add(Ui.Hint(L("Чтобы изменить режим или параметры SOCKS5, сначала отключите подключение.")));
         var card = Ui.Card([.. rows]);
