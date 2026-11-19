@@ -372,19 +372,23 @@ sealed class RuleEditorWindow : Window
         if (Rule.Kind == RuleKind.App)
         {
             var path = new TextBlock { Text = Rule.Value.Length == 0 ? "—" : Rule.Value, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 260, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
-            var panel = new WrapPanel();
+            var panel = new StackPanel();
+            path.HorizontalAlignment = HorizontalAlignment.Left;
+            path.Margin = new Thickness(0, 0, 0, 10);
             panel.Children.Add(path);
-            panel.Children.Add(Ui.Button(L("Запущенные…"), () =>
+            var choices = new WrapPanel();
+            panel.Children.Add(choices);
+            choices.Children.Add(Ui.Button(L("Запущенные…"), () =>
             {
                 var picker = new AppPickerWindow { Owner = this };
                 if (picker.ShowDialog() == true) { Rule = Rule with { Value = picker.Picked! }; Render(); }
             }));
-            panel.Children.Add(Ui.Button(L("Файл…"), () =>
+            choices.Children.Add(Ui.Button(L("Файл…"), () =>
             {
                 var d = new OpenFileDialog { Filter = L("Программы") + " (*.exe)|*.exe" };
                 if (d.ShowDialog() == true) { Rule = Rule with { Value = d.FileName }; Render(); }
             }));
-            panel.Children.Add(Ui.Button(L("Папка…"), () =>
+            choices.Children.Add(Ui.Button(L("Папка…"), () =>
             {
                 var d = new OpenFolderDialog();
                 if (d.ShowDialog() == true) { Rule = Rule with { Value = d.FolderName.TrimEnd('\\') + "\\" }; Render(); }
