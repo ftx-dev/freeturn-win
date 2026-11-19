@@ -58,7 +58,10 @@ public sealed class ServersView : UserControl, IDisposable
         if (Ui.Compact)
         {
             left.Width = double.NaN;
-            left.Height = 190;
+            // Measure the actual items instead of reserving an empty 190px block.
+            // Long server lists scroll without consuming the entire compact page.
+            left.VerticalAlignment = VerticalAlignment.Top;
+            list.MaxHeight = 180;
             grid.ColumnDefinitions.Clear();
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition());

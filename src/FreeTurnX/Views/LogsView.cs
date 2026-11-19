@@ -22,14 +22,28 @@ public sealed class LogsView : UserControl, IDisposable
     {
         this.model = model;
         var toolbar = new StackPanel { Margin = new Thickness(16, 12, 16, 12) };
-        var bar = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+        var bar = new Grid { Margin = new Thickness(0, 0, 0, 10) };
+        bar.ColumnDefinitions.Add(new ColumnDefinition());
+        bar.ColumnDefinitions.Add(new ColumnDefinition());
         toolbar.Children.Add(bar);
-        bar.Children.Add(Ui.Choice(minLevel, [(LogLevel.Debug, L("Все")), (LogLevel.Info, L("Инфо и выше")), (LogLevel.Warn, L("Предупреждения и ошибки")), (LogLevel.Error, L("Только ошибки"))],
-            v => { minLevel = v; Fill(); }, 180));
+        var level = Ui.Choice(minLevel, [(LogLevel.Debug, L("Все")), (LogLevel.Info, L("Инфо и выше")), (LogLevel.Warn, L("Предупреждения и ошибки")), (LogLevel.Error, L("Только ошибки"))],
+            v => { minLevel = v; Fill(); }, 180);
+        level.MinWidth = 0;
+        level.Height = 36;
+        level.Margin = new Thickness(0, 0, 4, 0);
+        bar.Children.Add(level);
         var src = Ui.Choice(source, [(null, L("Все источники")), (LogSource.Core, L("Ядро")), (LogSource.Engine, L("Движок")), (LogSource.App, L("Приложение"))],
             v => { source = v; Fill(); }, 160);
-        src.Margin = new Thickness(8, 0, 8, 0);
+        src.MinWidth = 0;
+        src.Height = 36;
+        src.Margin = new Thickness(4, 0, 0, 0);
+        Grid.SetColumn(src, 1);
         bar.Children.Add(src);
+        if (!Ui.Compact)
+        {
+            bar.HorizontalAlignment = HorizontalAlignment.Left;
+            bar.Width = 380;
+        }
         var commands = new DockPanel { LastChildFill = true };
         toolbar.Children.Add(commands);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 0, 0, 0) };
@@ -41,7 +55,9 @@ public sealed class LogsView : UserControl, IDisposable
         var copy = Ui.ActionIcon(L("Копировать"), "M6,6 L18,6 18,20 6,20 Z M3,16 L2,16 2,2 14,2 14,3", () => Clipboard.SetText(string.Join(Environment.NewLine, Lines().Select(Render))));
         actions.Children.Add(copy);
         actions.Children.Add(Ui.ActionIcon(L("Сохранить…"), "M2,2 L16,2 20,6 20,20 2,20 Z M6,2 L6,8 15,8 15,2 M6,20 L6,13 16,13 16,20", Save));
-        actions.Children.Add(Ui.ActionIcon(L("Очистить"), "M2,4 L18,4 M7,4 L7,1 13,1 13,4 M4,4 L5,20 15,20 16,4", () => model.Logs.Clear(), Ui.Red));
+        var clear = Ui.ActionIcon(L("Очистить"), "M2,4 L18,4 M7,4 L7,1 13,1 13,4 M4,4 L5,20 15,20 16,4", () => model.Logs.Clear(), Ui.Red);
+        clear.Margin = new Thickness(0);
+        actions.Children.Add(clear);
         var root = new DockPanel();
         DockPanel.SetDock(toolbar, Dock.Top);
         root.Children.Add(toolbar);
