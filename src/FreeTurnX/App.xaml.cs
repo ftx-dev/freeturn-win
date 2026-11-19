@@ -29,12 +29,22 @@ public partial class App : Application
         }
         var ui = SynchronizationContext.Current!;
         Model = new AppModel(ui);
+        EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent,
+            new RoutedEventHandler((sender, _) =>
+            {
+                if (sender is Window child) child.Icon = AppIcons.Window(Model.Settings.AppIcon);
+            }));
         ApplyTheme();
         ApplyAnimations();
         AppIcons.UpdateStartMenu(Model.Settings.AppIcon);
         Model.PropertyChanged += (_, args) =>
         {
-            if (args.PropertyName == nameof(AppModel.Settings)) AppIcons.UpdateStartMenu(Model.Settings.AppIcon);
+            if (args.PropertyName == nameof(AppModel.Settings))
+            {
+                AppIcons.UpdateStartMenu(Model.Settings.AppIcon);
+                var icon = AppIcons.Window(Model.Settings.AppIcon);
+                foreach (Window child in Windows) child.Icon = icon;
+            }
         };
         SystemParameters.StaticPropertyChanged += (_, args) =>
         {
