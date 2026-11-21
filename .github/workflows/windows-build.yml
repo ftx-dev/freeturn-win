@@ -1,8 +1,13 @@
 name: Windows build
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing draft release to attach installers to (leave empty for build only)'
+        required: false
+        type: string
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: windows-latest
@@ -35,3 +40,16 @@ jobs:
           name: windows-unsigned
           path: dist/*
           if-no-files-found: error
+      - name: Upload installers to draft release
+        if: inputs.release_tag != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          if ($env:RELEASE_TAG -ne "v$($props.Project.PropertyGroup.Version)") { throw 'Release version mismatch' }
+          $release = gh release view $env:RELEASE_TAG --json isDraft | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or !$release.isDraft) { throw 'Only an existing draft release can receive builds' }
+          gh release upload $env:RELEASE_TAG (Get-ChildItem dist -File | ForEach-Object FullName) --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
