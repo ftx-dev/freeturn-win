@@ -103,7 +103,6 @@
   "Не удалось": "Failed",
   "Не удалось проверить обновления.": "Could not check for updates.",
   "Не удалось разобрать конфиг WireGuard": "Could not parse the WireGuard config",
-  "Не удалось скачать обновление.": "Could not download the update.",
   "Не удалось установить обновление: ": "Could not install the update: ",
   "Не удалось установить службу: %@": "Could not install the service: %@",
   "Не установлена": "Not installed",
@@ -124,8 +123,8 @@
   "Обновить службу": "Update service",
   "Обновления": "Updates",
   "Обфускация": "Obfuscation",
-  "Общий": "Shared",
-  "Общий профиль действует для серверов без собственного.": "The shared profile applies to servers without their own.",
+  "По умолчанию": "Default",
+  "Профиль по умолчанию действует для серверов без собственного.": "The default profile applies to servers without their own.",
   "Остановите подключение, чтобы изменить этот сервер.": "Disconnect to edit this server.",
   "Отдача": "Upload",
   "Отключение…": "Disconnecting…",
@@ -191,7 +190,6 @@
   "Светлая": "Light",
   "Сгенерировать": "Generate",
   "Сделать активным": "Make active",
-  "Сделать общим": "Make shared",
   "Сервер": "Server",
   "Сервер «%@» и все его настройки будут удалены из приложения.": "Server “%@” and all its settings will be removed from the app.",
   "Сервер с этим адресом уже есть в списке.": "A server with this address is already in the list.",
@@ -249,7 +247,7 @@
   "Язык сменится после перезапуска приложения.": "The language changes after the app restarts.",
   "мс": "ms",
   "нет конфига WireGuard": "no WireGuard config",
-  "общий": "shared",
+  "по умолчанию": "default",
   "потоков": "streams",
   "Переподключение...": "Reconnecting...",
   "Отключить анимации": "Disable animations",
@@ -280,5 +278,6 @@
   "При закрытии окна": "When closing the window",
   "Спрашивать": "Ask every time",
   "Обновлениями управляет Microsoft Store.": "Updates are managed by Microsoft Store.",
-  "Службой управляет установщик MSIX.": "The service is managed by the MSIX installer."
+  "Службой управляет установщик MSIX.": "The service is managed by the MSIX installer.",
+  "Загрузка остановилась: сервер не отвечает. Повторите попытку.": "The download stalled: the server is not responding. Please try again."
 }

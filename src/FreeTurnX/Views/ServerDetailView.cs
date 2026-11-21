@@ -151,7 +151,7 @@ public sealed class ServerDetailView : UserControl, IDisposable
         page.Add(Ui.Card(TunnelEditor()));
 
         page.Add(Ui.Header(L("Маршруты")));
-        var profiles = new (string? id, string title)[] { (null, L("Общий")) }.Concat(model.Routing.Profiles.Select(p => ((string?)p.Id, model.DisplayName(p)))).ToArray();
+        var profiles = new (string? id, string title)[] { (null, L("По умолчанию")) }.Concat(model.Routing.Profiles.Select(p => ((string?)p.Id, model.DisplayName(p)))).ToArray();
         page.Add(Ui.Card(Ui.Row(L("Профиль маршрутов"), Ui.Choice(c.RoutingProfileId, profiles, v => Save(s => s.Client.RoutingProfileId = v)))));
 
         page.Add(Ui.Header(L("Отладка")));

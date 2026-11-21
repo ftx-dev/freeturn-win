@@ -16,6 +16,7 @@ public sealed class RoutingView : UserControl, IDisposable
     readonly ListBox list = new() { BorderThickness = new Thickness(0) };
     readonly ContentControl editor = new();
     string selectedId;
+    bool renderingList;
 
     public RoutingView(AppModel model)
     {
@@ -39,7 +40,7 @@ public sealed class RoutingView : UserControl, IDisposable
         menu.Items.Add(import);
         add.ContextMenu = menu;
         add.Click += (_, _) => { menu.PlacementTarget = add; menu.IsOpen = true; };
-        list.SelectionChanged += (_, _) => { if (list.SelectedItem is ListBoxItem { Tag: string id }) { selectedId = id; ShowEditor(); } };
+        list.SelectionChanged += (_, _) => { if (!renderingList && list.SelectedItem is ListBoxItem { Tag: string id }) { selectedId = id; ShowEditor(); } };
 
         var left = new DockPanel();
         left.SetResourceReference(Panel.BackgroundProperty, "CardBackgroundFillColorDefaultBrush");
@@ -76,6 +77,7 @@ public sealed class RoutingView : UserControl, IDisposable
 
     void RenderList()
     {
+        renderingList = true;
         list.Items.Clear();
         foreach (var p in model.Routing.Profiles)
         {
@@ -86,7 +88,7 @@ public sealed class RoutingView : UserControl, IDisposable
             row.Children.Add(icon);
             if (p.Id == model.Routing.SharedProfileId)
             {
-                var shared = new TextBlock { Text = L("общий"), Margin = new Thickness(12, 0, 0, 0), FontSize = 12, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center };
+                var shared = new TextBlock { Text = L("по умолчанию"), Margin = new Thickness(12, 0, 0, 0), FontSize = 12, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center };
                 DockPanel.SetDock(shared, Dock.Right);
                 row.Children.Add(shared);
             }
@@ -95,6 +97,7 @@ public sealed class RoutingView : UserControl, IDisposable
         }
         if (!model.Routing.Profiles.Any(p => p.Id == selectedId)) selectedId = model.Routing.SharedProfileId;
         list.SelectedIndex = model.Routing.Profiles.FindIndex(p => p.Id == selectedId);
+        renderingList = false;
         ShowEditor();
     }
 
@@ -102,8 +105,9 @@ public sealed class RoutingView : UserControl, IDisposable
     {
         var scroll = Content as ScrollViewer;
         var offset = scroll?.VerticalOffset ?? 0;
+        var rulesOffset = editor.Content is ProfileEditor previous && previous.ProfileId == selectedId ? previous.ScrollOffset : 0;
         editor.Content = model.Routing.Profiles.FirstOrDefault(p => p.Id == selectedId) is { } profile
-            ? new ProfileEditor(model, profile, id => { selectedId = id; model.NotifyRouting(); }) : null;
+            ? new ProfileEditor(model, profile, id => { selectedId = id; model.NotifyRouting(); }, rulesOffset) : null;
         scroll?.UpdateLayout();
         scroll?.ScrollToVerticalOffset(offset);
     }
@@ -133,13 +137,19 @@ sealed class ProfileEditor : UserControl
     readonly AppModel model;
     readonly RoutingProfile profile;
     readonly Action<string> select;
+    readonly ScrollViewer rulesScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+    public string ProfileId => profile.Id;
+    public double ScrollOffset => rulesScroll.VerticalOffset;
 
-    public ProfileEditor(AppModel model, RoutingProfile profile, Action<string> select)
+    public ProfileEditor(AppModel model, RoutingProfile profile, Action<string> select, double scrollOffset = 0)
     {
         this.model = model;
         this.profile = profile.Copy();
         this.select = select;
         Render();
+        RoutedEventHandler? restore = null;
+        restore = (_, _) => { Loaded -= restore; rulesScroll.ScrollToVerticalOffset(scrollOffset); };
+        Loaded += restore;
     }
 
     void Mutate(Action<RoutingProfile> change)
@@ -164,18 +174,21 @@ sealed class ProfileEditor : UserControl
             v => Mutate(p => p.DefaultAction = v), width: 320);
         mode.IsEnabled = !profile.BuiltIn;
         mode.HorizontalAlignment = HorizontalAlignment.Left;
-        top.Children.Add(mode);
+        var toolbar = new WrapPanel { Margin = new Thickness(0, 6, 0, 10) };
+        mode.Margin = new Thickness(0, 4, 8, 4);
+        toolbar.Children.Add(mode);
 
-        var actions = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 10) };
-        var share = Ui.Button(L("Сделать общим"), () => { model.Routing.SharedProfileId = profile.Id; model.NotifyRouting(); });
+        var actions = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 4) };
+        var share = Ui.Button(L("По умолчанию"), () => { model.Routing.SharedProfileId = profile.Id; model.NotifyRouting(); });
         share.IsEnabled = model.Routing.SharedProfileId != profile.Id;
-        share.ToolTip = L("Общий профиль действует для серверов без собственного.");
+        share.ToolTip = L("Профиль по умолчанию действует для серверов без собственного.");
         actions.Children.Add(share);
         actions.Children.Add(Ui.ActionIcon(L("Клонировать"), "M6,6 L18,6 18,20 6,20 Z M3,16 L2,16 2,2 14,2 14,3", () => { if (model.Routing.Clone(profile.Id) is { } c) select(c.Id); }));
         actions.Children.Add(Ui.ActionIcon(L("Экспорт…"), "M10,14 L10,1 M5,6 L10,1 15,6 M2,12 L2,19 18,19 18,12", Export));
         if (!profile.BuiltIn)
             actions.Children.Add(Ui.ActionIcon(L("Удалить"), "M2,4 L18,4 M7,4 L7,1 13,1 13,4 M4,4 L5,20 15,20 16,4 M8,8 L8,16 M12,8 L12,16", () => { model.Routing.Remove(profile.Id); select(model.Routing.SharedProfileId); }, Ui.Red));
-        top.Children.Add(actions);
+        toolbar.Children.Add(actions);
+        top.Children.Add(toolbar);
         DockPanel.SetDock(top, Dock.Top);
         root.Children.Add(top);
 
@@ -233,7 +246,8 @@ sealed class ProfileEditor : UserControl
         {
             var rules = new StackPanel();
             for (var i = 0; i < profile.Rules.Count; i++) rules.Children.Add(RuleRow(profile.Rules[i], i));
-            root.Children.Add(new ScrollViewer { Content = rules, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+            rulesScroll.Content = rules;
+            root.Children.Add(rulesScroll);
         }
         Content = root;
     }
@@ -305,7 +319,7 @@ sealed class ProfileEditor : UserControl
         Mutate(p =>
         {
             var i = p.Rules.FindIndex(r => r.Id == saved.Id);
-            if (i >= 0) p.Rules[i] = saved; else p.Rules.Add(saved);
+            if (i >= 0) p.Rules[i] = saved; else p.Rules.Insert(0, saved);
         });
     }
 

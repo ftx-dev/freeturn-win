@@ -21,11 +21,17 @@ public sealed class TrayIcon : IDisposable
     public TrayIcon(AppModel model, Action showWindow, Action quit)
     {
         this.model = model;
-        this.showWindow = showWindow;
+        icon = new NotifyIcon { Visible = true, ContextMenuStrip = new ContextMenuStrip() };
+        this.showWindow = () =>
+        {
+            // Release the native tray menu's input capture before activating WPF.
+            icon.ContextMenuStrip?.Close();
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Input, showWindow);
+        };
         iconVariant = model.Settings.AppIcon;
         baseIcon = AppIcons.Tray(iconVariant);
-        icon = new NotifyIcon { Visible = true, ContextMenuStrip = new ContextMenuStrip() };
-        icon.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) showWindow(); };
+        icon.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) this.showWindow(); };
         BuildMenu(quit);
         icon.ContextMenuStrip.Opening += (_, e) =>
         {

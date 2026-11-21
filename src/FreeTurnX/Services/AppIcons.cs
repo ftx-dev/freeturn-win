@@ -17,7 +17,18 @@ public static class AppIcons
     public static Uri IcoUri(string variant) => new($"pack://application:,,,/Resources/icon-{Pick(variant)}.ico");
     public static Uri LogoUri(string variant) => new($"pack://application:,,,/Resources/logo-{Pick(variant)}.png");
 
-    public static ImageSource Window(string variant) => BitmapFrame.Create(IcoUri(variant));
+    static readonly System.Collections.Generic.Dictionary<string, ImageSource> windowIcons = [];
+    public static ImageSource Window(string variant)
+    {
+        var key = Pick(variant);
+        if (!windowIcons.TryGetValue(key, out var image))
+        {
+            var frame = BitmapFrame.Create(IcoUri(key));
+            frame.Freeze();
+            windowIcons[key] = image = frame;
+        }
+        return image;
+    }
     public static ImageSource Logo(string variant) => new BitmapImage(LogoUri(variant));
 
     public static System.Drawing.Icon Tray(string variant)

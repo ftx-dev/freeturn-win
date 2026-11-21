@@ -339,14 +339,30 @@ public sealed class AppModel : INotifyPropertyChanged
         var status = new System.Windows.Controls.TextBlock { Text = L("Загрузка…"), Margin = new Thickness(0, 0, 0, 12) };
         var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(24) };
         panel.Children.Add(status);
-        panel.Children.Add(new System.Windows.Controls.ProgressBar { IsIndeterminate = true, Height = 6 });
+        var progress = new System.Windows.Controls.ProgressBar { IsIndeterminate = true, Height = 6, Maximum = 100 };
+        panel.Children.Add(progress);
+        using var cancellation = new CancellationTokenSource();
+        var cancel = Ui.Button(L("Отмена"), () => cancellation.Cancel());
+        cancel.HorizontalAlignment = HorizontalAlignment.Right;
+        cancel.Margin = new Thickness(0, 16, 0, 0);
+        panel.Children.Add(cancel);
         var window = new Window { Title = F("Обновить до %@", update.Version), Width = 380, SizeToContent = SizeToContent.Height,
             ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterScreen, Content = panel };
-        void Changed(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => status.Text = Updater.StatusText;
+        bool finished = false;
+        window.Closing += (_, e) => { if (!finished) { e.Cancel = true; cancellation.Cancel(); } };
+        void Changed(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            status.Text = Updater.StatusText;
+            progress.IsIndeterminate = Updater.Phase != UpdatePhase.Downloading || Updater.Download.Total is not > 0;
+            if (!progress.IsIndeterminate) progress.Value = 100.0 * Updater.Download.Received / Updater.Download.Total!.Value;
+        }
         Updater.PropertyChanged += Changed;
         window.Show();
-        try { await Updater.InstallAsync(update, () => Connection.DisconnectAsync(), () => ((App)Application.Current).Quit()); }
-        finally { Updater.PropertyChanged -= Changed; window.Close(); }
+        try { await Updater.InstallAsync(update, () => Connection.DisconnectAsync(),
+            () => Application.Current.Dispatcher.BeginInvoke(new Action(((App)Application.Current).Quit)), cancellation.Token); }
+        finally { finished = true; Updater.PropertyChanged -= Changed; window.Close(); }
+        if (Updater.Phase == UpdatePhase.Failed)
+            new AppDialog(L("Не удалось"), Updater.StatusText, "OK", "").ShowDialog();
     }
 
     /// <summary>Как на Android: один раз предложить подписаться на канал - после первого удачного подключения.</summary>

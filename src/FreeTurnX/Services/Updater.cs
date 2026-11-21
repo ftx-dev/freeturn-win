@@ -5,6 +5,7 @@ using System.IO;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using FreeTurn.Core;
 using static FreeTurnX.Strings;
@@ -24,6 +25,7 @@ public sealed class Updater : INotifyPropertyChanged
     public UpdatePhase Phase { get => phase; private set { phase = value; Changed(); Changed(nameof(StatusText)); } }
     public AvailableUpdate? Available { get; private set; }
     string error = "";
+    public DownloadProgress Download { get; private set; }
 
     public static string CurrentVersion => typeof(Updater).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "0.0.0";
 
@@ -35,7 +37,9 @@ public sealed class Updater : INotifyPropertyChanged
         UpdatePhase.Checking => L("Проверка…"),
         UpdatePhase.UpToDate => L("Установлена последняя версия"),
         UpdatePhase.Available => F("Доступна версия %@", Available?.Version ?? ""),
-        UpdatePhase.Downloading => L("Загрузка…"),
+        UpdatePhase.Downloading => Download.Total is > 0
+            ? $"{L("Загрузка…")} {Download.Received * 100 / Download.Total}% · {Download.Received / 1048576.0:F1} / {Download.Total / 1048576.0:F1} MB"
+            : $"{L("Загрузка…")} {Download.Received / 1048576.0:F1} MB",
         UpdatePhase.Installing => L("Установка…"),
         UpdatePhase.Failed => error,
         _ => "",
@@ -70,49 +74,48 @@ public sealed class Updater : INotifyPropertyChanged
     }
 
     /// <summary>Скачивает и запускает установщик; beforeQuit - отключить VPN перед выходом.</summary>
-    public async Task InstallAsync(AvailableUpdate update, Func<Task> beforeQuit, Action quit)
+    public async Task InstallAsync(AvailableUpdate update, Func<Task> beforeQuit, Action quit, CancellationToken cancellationToken = default)
     {
         if (PackageChannel.IsPackaged) { PackageChannel.OpenUpdates(); return; }
+        Download = default;
         Phase = UpdatePhase.Downloading;
+        string? setup = null;
+        UpdateHandoff? handoff = null;
         try
         {
-            var setup = await DownloadAsync(update.SetupUrl);
+            setup = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + "-" + Path.GetFileName(update.SetupUrl.AbsolutePath));
+            var progress = new Progress<DownloadProgress>(value => { Download = value; Changed(nameof(Download)); Changed(nameof(StatusText)); });
+            await UpdateDownload.DownloadAsync(Http, update.SetupUrl, setup, progress, cancellationToken);
             // Без контрольной суммы не ставим: установщик без подписи Authenticode иначе ничем не проверить.
             if (update.ChecksumsUrl is null) throw new InvalidOperationException(L("Контрольная сумма обновления не совпала — установка отменена."));
-            var sums = await Http.GetStringAsync(update.ChecksumsUrl);
+            var sums = await Http.GetStringAsync(update.ChecksumsUrl, cancellationToken);
             if (UpdateCheck.Checksum(Path.GetFileName(update.SetupUrl.AbsolutePath), sums) is not { } expected || UpdateCheck.Sha256(setup) != expected)
                 throw new InvalidOperationException(L("Контрольная сумма обновления не совпала — установка отменена."));
 
             Phase = UpdatePhase.Installing;
-            // Установщику нужны права администратора, а приложение должно выйти, чтобы его заменили.
-            // Скрытый PowerShell от пользователя ждёт установщик и открывает новую версию уже без прав.
-            var script = $"$p = Start-Process -FilePath '{Escape(setup)}' -ArgumentList '/S' -Verb RunAs -Wait -PassThru; " +
-                         $"if ($p.ExitCode -eq 0) {{ Start-Process -FilePath '{Escape(Environment.ProcessPath!)}' }}";
-            Process.Start(new ProcessStartInfo("powershell.exe")
-            {
-                ArgumentList = { "-NoProfile", "-WindowStyle", "Hidden", "-Command", script },
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            });
+            handoff = await UpdateHandoff.PrepareAsync(setup, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             await beforeQuit();
+            cancellationToken.ThrowIfCancellationRequested();
             quit();
+        }
+        catch (OperationCanceledException)
+        {
+            handoff?.Abort();
+            if (setup is not null) TryDelete(setup);
+            Phase = UpdatePhase.Idle;
         }
         catch (Exception e)
         {
-            Fail(e is InvalidOperationException ? e.Message : L("Не удалось установить обновление: ") + e.Message);
+            handoff?.Abort();
+            if (setup is not null) TryDelete(setup);
+            Fail(e is TimeoutException ? L("Загрузка остановилась: сервер не отвечает. Повторите попытку.") : L("Не удалось установить обновление: ") + e.Message);
         }
     }
 
-    static string Escape(string path) => path.Replace("'", "''");
-
-    static async Task<string> DownloadAsync(Uri url)
+    static void TryDelete(string path)
     {
-        var target = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + "-" + Path.GetFileName(url.AbsolutePath));
-        using var r = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-        if (!r.IsSuccessStatusCode) throw new InvalidOperationException(L("Не удалось скачать обновление."));
-        await using var file = File.Create(target);
-        await r.Content.CopyToAsync(file);
-        return target;
+        try { File.Delete(path); } catch (IOException) { }
     }
 
     void Fail(string message)

@@ -10,5 +10,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../FreeTurn.Core/FreeTurn.Core.csproj" />
+    <Compile Include="../FreeTurnX/Services/UpdateHandoff.cs" Link="UpdateHandoff.cs" />
   </ItemGroup>
 </Project>
