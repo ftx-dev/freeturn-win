@@ -23,6 +23,7 @@ public sealed class UpdateHandoff
         var installer = Quote(setup);
         var installed = Quote(installedPath);
         var elevated = $$"""
+            $env:PSModulePath = "$PSHOME\Modules;" + $env:PSModulePath
             $ErrorActionPreference = 'Stop'
             try {
                 if ((Get-FileHash -LiteralPath {{installer}} -Algorithm SHA256).Hash.ToLowerInvariant() -ne '{{expected}}') { throw 'Installer checksum mismatch' }
@@ -35,6 +36,7 @@ public sealed class UpdateHandoff
             } catch { [IO.File]::WriteAllText({{status}}, $_.Exception.Message); exit 1 }
             """;
         var supervisor = $$"""
+            $env:PSModulePath = "$PSHOME\Modules;" + $env:PSModulePath
             $ErrorActionPreference = 'Stop'
             try {
                 $worker = Start-Process -FilePath "$PSHOME\powershell.exe" -ArgumentList '-NoProfile','-WindowStyle','Hidden','-EncodedCommand','{{Encode(elevated)}}' {{(elevate ? "-Verb RunAs" : "")}} -WindowStyle Hidden -Wait -PassThru
